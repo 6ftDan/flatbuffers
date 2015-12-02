@@ -5,9 +5,18 @@ module FlatBuffers
       @@attrs = [:bytewidth, :min_val, :max_val, :rb_type, :name, :packer_type]
       attr_accessor *@@attrs
       def initialize **opts
+        @value = 0 # YES/NO/I DON'T KNOW MAYBE NIL ;-)
         @@attrs.each do |a|
           instance_variable_set "@#{a}", opts.fetch(a) {nil}
         end
+      end
+
+      def self.rb_type(value)
+        new.instance_eval {@value = value}
+      end
+
+      def coerce(other)
+        [other, @value]
       end
     end
 

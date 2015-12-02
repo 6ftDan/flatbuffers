@@ -1,9 +1,12 @@
 require_relative "flatbuffers/number_types"
+require_relative "flatbuffers/encode"
 
 module FlatBuffers
   class Builder
     MAX_BUFFER_SIZE = 2**31
     N = NumberTypes
+    
+    attr_accessor :minalign, :bytes, :head
     
     def initialize initial_size
       #"""
@@ -18,7 +21,7 @@ module FlatBuffers
 
       @bytes = Array.new initial_size, 0
       @current_vtable = nil
-      @head = N::UOffsetTFlags.new(rb_type: initial_size)
+      @head = N::UOffsetTFlags.rb_type(initial_size)
       @minalign = 1
       @object_end = nil
       @vtables = []
@@ -84,7 +87,7 @@ module FlatBuffers
 
       assert_not_nested()
       @nested = true
-      prep(N.Uint32Flags.bytewidth, elem_size*num_elems)
+      prep(N::Uint32Flags.new.bytewidth, elem_size*num_elems)
       prep(alignment, elem_size*num_elems)  # In case alignment > int.
       offset()
     end
@@ -98,6 +101,73 @@ module FlatBuffers
       place_UOffsetT(vector_num_elems)
       offset()
     end
+
+
+    def prep size, additional_bytes
+      #"""
+      #Prep prepares to write an element of `size` after `additional_bytes`
+      #have been written, e.g. if you write a string, you need to align
+      #such the int length field is aligned to SizeInt32, and the string
+      #data follows it directly.
+      #If all you need to do is align, `additional_bytes` will be 0.
+      #"""
+
+      # Track the biggest thing we've ever aligned to.
+      if size > self.minalign
+        self.minalign = size
+      end
+
+      # Find the amount of alignment needed such that `size` is properly
+      # aligned after `additional_bytes`:
+      align_size = (~(self.bytes.length - self.head + additional_bytes)) + 1
+      align_size &= (size - 1)
+
+      # Reallocate the buffer if needed:
+      while self.head() < align_size + size + additional_bytes
+        old_buf_size = self.bytes.length
+        self.grow_byte_buffer()
+        updated_head = self.head + self.bytes.length - old_buf_size
+        self.head = N::UOffsetTFlags.rb_type(updated_head)
+      end
+      self.pad(align_size)
+    end
+
+
+    def grow_byte_buffer
+      #"""Doubles the size of the byteslice, and copies the old data towards
+      #   the end of the new buffer (since we build the buffer backwards)."""
+      if self.bytes.length == MAX_BUFFER_SIZE
+        msg = "flatbuffers: cannot grow buffer beyond 2 gigabytes"
+        raise BuilderSizeError, msg
+      end
+
+      new_size = [self.bytes.length * 2, MAX_BUFFER_SIZE].min
+      if new_size == 0
+        new_size = 1
+      end
+      bytes2 = Array.new(new_size, 0b0)
+      bytes2[new_size-self.bytes.length] = self.bytes
+      self.bytes = bytes2
+    end
+
+    def pad n
+      #"""Pad places zeros at the current offset."""
+      n.times do
+        self.place 0, N::Uint8Flags.new
+      end
+    end
+
+    def place x, flags
+      #"""
+      #Place prepends a value specified by `flags` to the Builder,
+      #without checking for available space.
+      #"""
+
+      x = N.enforce_number x, flags
+      self.head = self.head - flags.bytewidth
+      Encode.write flags.packer_type, self.bytes, self.head, x
+    end
+
     private
     class NestedError < StandardError; end
     def assert_not_nested
@@ -108,5 +178,7 @@ module FlatBuffers
     def assert_nested
       raise NotNestedError, "Error; it's not nested" unless @nested
     end
+
+    class BuilderSizeError < StandardError; end
   end  
 end
