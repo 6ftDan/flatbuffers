@@ -42,4 +42,16 @@ describe "TestByteLayout" do
                               0xEE, 0xFE, 0x22, 0x82,
                               0, 255, 129, 1]
   end
+
+  it "Uint64 numbers" do
+        b.prepend_uint64 0x1122334455667788
+        assert_builder_equals b, [0x88, 0x77, 0x66, 0x55,
+                                  0x44, 0x33, 0x22, 0x11]
+  end
+
+  it "Int64 numbers" do
+        b.prepend_int64 0x1122334455667788
+        assert_builder_equals b, [0x88, 0x77, 0x66, 0x55,
+                                  0x44, 0x33, 0x22, 0x11]
+  end
 end

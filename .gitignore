@@ -58,3 +58,4 @@ java/*.iml
 java/target
 **/*.pyc
 .idea
+**/*.swp

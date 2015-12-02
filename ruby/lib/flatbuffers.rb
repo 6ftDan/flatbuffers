@@ -62,5 +62,13 @@ module FlatBuffers
     def prepend_uint32 uint32
       @bytes.unshift *[uint32].pack("V").bytes
     end
+
+    def prepend_uint64 uint64
+      @bytes.unshift *[uint64].pack("Q").bytes
+    end
+    
+    def prepend_int64 int64
+      @bytes.unshift *[int64].pack("q").bytes
+    end
   end  
 end
