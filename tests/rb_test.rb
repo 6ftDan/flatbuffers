@@ -54,4 +54,35 @@ describe "TestByteLayout" do
         assert_builder_equals b, [0x88, 0x77, 0x66, 0x55,
                                   0x44, 0x33, 0x22, 0x11]
   end
+
+  it "1xbyte vector" do
+    assert_builder_equals b, []
+    b.start_vector FlatBuffers::NumberTypes::Uint8Flags.new.bytewidth, 1, 1
+    assert_builder_equals b, [0, 0, 0] # align to 4bytes
+    b.prepend_byte 1
+    assert_builder_equals b, [1, 0, 0, 0]
+    b.end_vector 1
+    assert_builder_equals b, [1, 0, 0, 0, 1, 0, 0, 0] # padding
+  end
+  #def test_2xbyte_vector(self):
+  #def test_1xuint16_vector(self):
+  #def test_2xuint16_vector(self):
+  #def test_create_ascii_string(self):
+  #def test_create_arbitrary_string(self):
+  #def test_empty_vtable(self):
+  #def test_vtable_with_one_true_bool(self):
+  #def test_vtable_with_one_default_bool(self):
+  #def test_vtable_with_one_int16(self):
+  #def test_vtable_with_two_int16(self):
+  #def test_vtable_with_int16_and_bool(self):
+  #def test_vtable_with_empty_vector(self):
+  #def test_vtable_with_empty_vector_of_byte_and_some_scalars(self):
+  #def test_vtable_with_1_int16_and_2vector_of_int16(self):
+  #def test_vtable_with_1_struct_of_1_int8__1_int16__1_int32(self):
+  #def test_vtable_with_1_vector_of_2_struct_of_2_int8(self):
+  #def test_table_with_some_elements(self):
+  #def test__one_unfinished_table_and_one_finished_table(self):
+  #def test_a_bunch_of_bools(self):
+  #def test_three_bools(self):
+  #def test_some_floats(self):
 end

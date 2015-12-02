@@ -16,9 +16,9 @@ module FlatBuffers
         raise BuilderSizeError(msg)
       end
 
-      @bytes = Array.new(initial_size, 0)
+      @bytes = Array.new initial_size, 0
       @current_vtable = nil
-      @head = UOffsetTFlags.rb_type(initial_size)
+      @head = N::UOffsetTFlags.new(rb_type: initial_size)
       @minalign = 1
       @object_end = nil
       @vtables = []
@@ -70,6 +70,43 @@ module FlatBuffers
     
     def prepend_int64 int64
       @bytes.unshift *[int64].pack("q").bytes
+    end
+
+
+    def start_vector elem_size, num_elems, alignment
+      #"""
+      #StartVector initializes bookkeeping for writing a new vector.
+      #
+      #A vector has the following format:
+      #  <UOffsetT: number of elements in this vector>
+      #  <T: data>+, where T is the type of elements of this vector.
+      #"""
+
+      assert_not_nested()
+      @nested = true
+      prep(N.Uint32Flags.bytewidth, elem_size*num_elems)
+      prep(alignment, elem_size*num_elems)  # In case alignment > int.
+      offset()
+    end
+
+    def end_vector vector_num_elems
+      #"""EndVector writes data necessary to finish vector construction."""
+
+      assert_nested()
+      @nested = false
+      # we already made space for this, so write without PrependUint32
+      place_UOffsetT(vector_num_elems)
+      offset()
+    end
+    private
+    class NestedError < StandardError; end
+    def assert_not_nested
+      raise NestedError, "Error; it's nested" if @nested
+    end
+
+    class NotNestedError < StandardError; end
+    def assert_nested
+      raise NotNestedError, "Error; it's not nested" unless @nested
     end
   end  
 end
