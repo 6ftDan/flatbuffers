@@ -3,6 +3,7 @@ require_relative "flatbuffers/number_types"
 module FlatBuffers
   class Builder
     MAX_BUFFER_SIZE = 2**31
+    N = NumberTypes
     
     def initialize initial_size
       #"""
