@@ -1,4 +1,5 @@
 require "flatbuffers/number_types"
+require "flatbuffers/packer"
 require "flatbuffers/encode"
 
 module FlatBuffers
@@ -85,21 +86,21 @@ module FlatBuffers
       #  <T: data>+, where T is the type of elements of this vector.
       #"""
 
-      assert_not_nested()
+      assert_not_nested
       @nested = true
-      prep(N::Uint32Flags.new.bytewidth, elem_size*num_elems)
-      prep(alignment, elem_size*num_elems)  # In case alignment > int.
-      offset()
+      prep N::Uint32Flags.new.bytewidth, elem_size * num_elems
+      prep alignment, elem_size * num_elems  # In case alignment > int.
+      offset
     end
 
     def end_vector vector_num_elems
       #"""EndVector writes data necessary to finish vector construction."""
 
-      assert_nested()
+      assert_nested
       @nested = false
       # we already made space for this, so write without PrependUint32
-      place_UOffsetT(vector_num_elems)
-      offset()
+      place_UOffsetT vector_num_elems
+      offset
     end
 
 
@@ -166,6 +167,11 @@ module FlatBuffers
       x = N.enforce_number x, flags
       self.head = self.head - flags.bytewidth
       Encode.write flags.packer_type, self.bytes, self.head, x
+    end
+
+    def offset
+      #"""Offset relative to the end of the buffer."""
+      N::UOffsetTFlags.rb_type(self.bytes.length - self.head)
     end
 
     private

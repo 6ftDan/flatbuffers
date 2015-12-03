@@ -41,7 +41,7 @@ module FlatBuffers
           max_val:     true,
           rb_type:     Boolean,
           name:        "bool",
-          packer_type: nil
+          packer_type: BooleanPacker
         }.
         update opts)
       end
@@ -55,7 +55,7 @@ module FlatBuffers
           max_val:     (2**8) - 1,
           rb_type:     Integer,
           name:        "uint8",
-          packer_type: nil
+          packer_type: Uint8Packer 
         }.
         update opts)
       end
@@ -69,7 +69,7 @@ module FlatBuffers
           max_val:     (2**16) - 1,
           rb_type:     Integer,
           name:        "uint16",
-          packer_type: nil
+          packer_type: Uint16Packer
         }.
         update opts)
       end
@@ -83,7 +83,7 @@ module FlatBuffers
           max_val:     (2**32) - 1,
           rb_type:     Integer,
           name:        "uint32",
-          packer_type: nil
+          packer_type: Uint32Packer
         }.
         update opts)
       end
@@ -97,7 +97,7 @@ module FlatBuffers
           max_val:     (2**64) - 1,
           rb_type:     Integer,
           name:        "uint64",
-          packer_type: nil
+          packer_type: Uint64Packer
         }.
         update opts)
       end
@@ -111,7 +111,7 @@ module FlatBuffers
           max_val:     (2**7) - 1,
           rb_type:     Integer,
           name:        "int8",
-          packer_type: nil
+          packer_type: Int8Packer
         }.
         update opts)
       end
@@ -125,7 +125,7 @@ module FlatBuffers
           max_val:     (2**15) - 1,
           rb_type:     Integer,
           name:        "int16",
-          packer_type: nil
+          packer_type: Int16Packer
         }.
         update opts)
       end
@@ -139,7 +139,7 @@ module FlatBuffers
           max_val:     (2**31) - 1,
           rb_type:     Integer,
           name:        "int32",
-          packer_type: nil
+          packer_type: Int32Packer
         }.
         update opts)
       end
@@ -153,7 +153,7 @@ module FlatBuffers
           max_val:     (2**63) - 1,
           rb_type:     Integer,
           name:        "int64",
-          packer_type: nil
+          packer_type: Int64Packer
         }.
         update opts)
       end
@@ -167,7 +167,7 @@ module FlatBuffers
           max_val:     nil,
           rb_type:     Float,
           name:        "float32",
-          packer_type: nil
+          packer_type: Float32Packer
         }.
         update opts)
       end
@@ -181,7 +181,7 @@ module FlatBuffers
           max_val:     nil,
           rb_type:     Float,
           name:        "float64",
-          packer_type: nil
+          packer_type: Float64Packer
         }.
         update opts)
       end
@@ -213,7 +213,6 @@ module FlatBuffers
       end
       n   
     end
-
 
     def self.float32_to_uint32 n
       packed = [n].pack "<1f"
