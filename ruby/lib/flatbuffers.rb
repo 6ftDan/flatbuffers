@@ -1,5 +1,5 @@
-require_relative "flatbuffers/number_types"
-require_relative "flatbuffers/encode"
+require "flatbuffers/number_types"
+require "flatbuffers/encode"
 
 module FlatBuffers
   class Builder
@@ -123,9 +123,9 @@ module FlatBuffers
       align_size &= (size - 1)
 
       # Reallocate the buffer if needed:
-      while self.head() < align_size + size + additional_bytes
+      while self.head < align_size + size + additional_bytes
         old_buf_size = self.bytes.length
-        self.grow_byte_buffer()
+        self.grow_byte_buffer
         updated_head = self.head + self.bytes.length - old_buf_size
         self.head = N::UOffsetTFlags.rb_type(updated_head)
       end

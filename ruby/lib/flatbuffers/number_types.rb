@@ -11,15 +11,22 @@ module FlatBuffers
         end
       end
 
-      def self.inherited(base)
-        def base.rb_type(value)
-          new.instance_eval {@value = value}
+      def self.inherited base
+        def base.rb_type value
+          new.instance_exec {@value = value; self}
         end
       end
-
-      def coerce(other)
+      
+      def coerce other
         [other, @value]
       end
+
+      include Comparable
+      def <=> other;        @value <=> other      end
+      def + other  ;        @value +   other      end
+      def - other  ;        @value -   other      end
+      def * other  ;        @value *   other      end
+      def / other  ;        @value /   other      end
     end
 
     module ::Boolean; end
