@@ -21,20 +21,20 @@ module FlatBuffers
     end
   end
 
-  BooleanPacker = Packer.new "<b"
+  BooleanPacker = Packer.new "c*"
 
-  Uint8Packer   = Packer.new "<B"
-  Uint16Packer  = Packer.new "<H"
-  Uint32Packer  = Packer.new "<I"
-  Uint64Packer  = Packer.new "<Q"
+  Uint8Packer   = Packer.new "C*"
+  Uint16Packer  = Packer.new "S*"
+  Uint32Packer  = Packer.new "L*"
+  Uint64Packer  = Packer.new "Q*"
 
-  Int8Packer    = Packer.new "<b"
-  Int16Packer   = Packer.new "<h"
-  Int32Packer   = Packer.new "<i"
-  Int64Packer   = Packer.new "<q"
+  Int8Packer    = Packer.new "c*"
+  Int16Packer   = Packer.new "s*"
+  Int32Packer   = Packer.new "l*"
+  Int64Packer   = Packer.new "q*"
 
-  Float32Packer = Packer.new "<f"
-  Float64Packer = Packer.new "<d"
+  Float32Packer = Packer.new "F*"
+  Float64Packer = Packer.new "D*"
 
   UoffsetPacker = Uint32Packer
   SoffsetPacker = Int32Packer

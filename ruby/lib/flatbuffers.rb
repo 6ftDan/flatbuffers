@@ -20,7 +20,7 @@ module FlatBuffers
         raise BuilderSizeError(msg)
       end
 
-      @bytes = Array.new initial_size, 0
+      @bytes = Array.new initial_size, 0b0
       @current_vtable = nil
       @head = N::UOffsetTFlags.rb_type(initial_size)
       @minalign = 1
@@ -146,7 +146,7 @@ module FlatBuffers
       if new_size == 0
         new_size = 1
       end
-      bytes2 = Array.new(new_size, 0b0)
+      bytes2 = Array.new new_size, 0b0
       bytes2[new_size-self.bytes.length] = self.bytes
       self.bytes = bytes2
     end
