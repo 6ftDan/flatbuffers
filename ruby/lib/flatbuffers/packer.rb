@@ -1,19 +1,19 @@
 module FlatBuffers
   Packer = Struct.new :fmt do
     def pack *values
-
+      values.pack fmt
     end
 
     def pack_into buffer, offset, *values
-
+      buffer.insert offset, values.pack(fmt)
     end
 
     def unpack string
-
+      string.unpack fmt
     end
 
     def unpack_from buffer, offset = 0
-
+      buffer[offset].unpack fmt
     end
 
     def calcsize
