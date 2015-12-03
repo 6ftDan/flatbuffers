@@ -11,8 +11,10 @@ module FlatBuffers
         end
       end
 
-      def self.rb_type(value)
-        new.instance_eval {@value = value}
+      def self.inherited(base)
+        def base.rb_type(value)
+          new.instance_eval {@value = value}
+        end
       end
 
       def coerce(other)
