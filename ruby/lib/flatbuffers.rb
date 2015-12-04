@@ -3,11 +3,16 @@ require "flatbuffers/encode"
 require "flatbuffers/number_types"
 
 module FlatBuffers
+
+  # VtableMetadataFields is the count of metadata fields in each vtable.
+  VtableMetadataFields = 2
+
   class Builder
     MAX_BUFFER_SIZE = 2**31
     N = NumberTypes
     
-    attr_accessor :minalign, :bytes, :head
+    attr_accessor :minalign, :bytes, :head, :current_vtable, :object_end,
+                  :nested
     
     def initialize initial_size
       #"""
@@ -28,6 +33,134 @@ module FlatBuffers
       @vtables = []
       @nested = false
       @finished = false
+    end
+
+    def start_object numfields
+      #"""StartObject initializes bookkeeping for writing a new object."""
+
+      assert_not_nested
+
+      # use 32-bit offsets so that arithmetic doesn't overflow.
+      self.current_vtable = Array.new numfields, 0 
+      self.object_end = self.offset
+      self.minalign = 1
+      self.nested = true
+    end
+
+
+    def write_vtable
+      #"""
+      #WriteVtable serializes the vtable for the current object, if needed.
+
+      #Before writing out the vtable, this checks pre-existing vtables for
+      #equality to this one. If an equal vtable is found, point the object to
+      #the existing vtable and return.
+
+      #Because vtable values are sensitive to alignment of object data, not
+      #all logically-equal vtables will be deduplicated.
+
+      #A vtable has the following format:
+      #  <VOffsetT: size of the vtable in bytes, including this value>
+      #  <VOffsetT: size of the object in bytes, including the vtable offset>
+      #  <VOffsetT: offset for a field> * N, where N is the number of fields
+      #             in the schema for this type. Includes deprecated fields.
+      #Thus, a vtable is made of 2 + N elements, each VOffsetT bytes wide.
+
+      #An object has the following format:
+      #  <SOffsetT: offset to this object's vtable (may be negative)>
+      #  <byte: data>+
+      #"""
+
+      # Prepend a zero scalar to the object. Later in this function we'll
+      # write an offset here that points to the object's vtable:
+      self.prepend_soffsett_relative 0
+
+      object_offset = self.offset
+      existing_vtable = nil 
+
+      # Search backwards through existing vtables, because similar vtables
+      # are likely to have been recently appended. See
+      # BenchmarkVtableDeduplication for a case in which this heuristic
+      # saves about 30% of the time used in writing objects with duplicate
+      # tables.
+
+      i = self.vtables.length - 1
+      while i >= 0
+        # Find the other vtable, which is associated with `i`:
+        vt2_offset = self.vtables[i]
+        vt2_start = self.bytes.length - vt2_offset
+        vt2_len = encode.get(packer.voffset, self.bytes, vt2_start)
+
+        metadata = VtableMetadataFields * N::VOffsetTFlags.bytewidth
+        vt2_end = vt2_start + vt2_len
+        vt2 = self.bytes[vt2_start+metadata..vt2_end]
+
+        # Compare the other vtable to the one under consideration.
+        # If they are equal, store the offset and break:
+        if vtable_equal(self.current_vtable, object_offset, vt2)
+          existing_vtable = vt2_offset
+          break
+        end
+        i -= 1
+      end
+      if existing_vtable.nil?
+        # Did not find a vtable, so write this one to the buffer.
+
+        # Write out the current vtable in reverse , because
+        # serialization occurs in last-first order:
+        i = self.current_vtable.length - 1
+        while i >= 0
+            off = 0
+            if self.current_vtable[i] != 0
+                # Forward reference to field;
+                # use 32bit number to ensure no overflow:
+                off = objectOffset - self.current_vtable[i]
+            end
+            self.prepend_voffsett off
+            i -= 1
+        end
+
+        # The two metadata fields are written last.
+
+        # First, store the object bytesize:
+        object_size = N::UOffsetTFlags.rb_type object_offset - self.object_end
+        self.prepend_voffsett N::VOffsetTFlags.rb_type object_size
+
+        # Second, store the vtable bytesize:
+        vbytes = self.current_vtable.length + VtableMetadataFields
+        vbytes *= N::VOffsetTFlags.bytewidth
+        self.prepend_voffsett N::VOffsetTFlags.rb_type vbytes
+
+        # Next, write the offset to the new vtable in the
+        # already-allocated SOffsetT at the beginning of this object:
+        object_start = N::SOffsetTFlags.rb_type self.bytes.length - object_offset
+        encode.write packer.soffset, self.bytes, object_start,
+                     N::SOffsetTFlags.rb_type( self.offset - object_offset )
+
+        # Finally, store this vtable in memory for future
+        # deduplication:
+        self.vtables.append self.offset
+      else
+        # Found a duplicate vtable.
+
+        object_start = N::SOffsetTFlags.rb_type(self.bytes.length - object_offset)
+        self.head = N::UOffsetTFlags.rb_type(object_start)
+
+        # Write the offset to the found vtable in the
+        # already-allocated SOffsetT at the beginning of this object:
+        encode.write packer.soffset, self.bytes, self.head,
+                     N::SOffsetTFlags.rb_type( existing_vtable - object_offset )
+      end
+      self.current_vtable = nil
+      object_offset
+    end
+
+
+    def end_object
+      #"""EndObject writes data necessary to finish object construction."""
+      assert_nested
+      self.nested = false
+      write_vtable
     end
 
     def bytes x = nil
@@ -76,6 +209,37 @@ module FlatBuffers
       @bytes.unshift *[int64].pack("q").bytes
     end
 
+    def prepend_soffsett_relative off
+      #"""
+      #PrependSOffsetTRelative prepends an SOffsetT, relative to where it
+      #will be written.
+      #"""
+
+      # Ensure alignment is already done:
+      self.prep N::SOffsetTFlags.bytewidth, 0
+      if not off <= self.offset
+        msg = "flatbuffers: Offset arithmetic error."
+        raise OffsetArithmeticError, msg
+      end
+      off2 = self.offset - off + N::SOffsetTFlags.bytewidth
+      self.place_soffsett off2
+    end
+
+    def prepend_uoffsett_relative off
+      #"""
+      #PrependUOffsetTRelative prepends an UOffsetT, relative to where it
+      #will be written.
+      #"""
+
+      # Ensure alignment is already done:
+      self.prep N::UOffsetTFlags.bytewidth, 0
+      if not off <= self.offset
+        msg = "flatbuffers: Offset arithmetic error."
+        raise OffsetArithmeticError, msg
+      end
+      off2 = self.offset - off + N::UOffsetTFlags.bytewidth
+      self.place_uoffsett off2
+    end
 
     def start_vector elem_size, num_elems, alignment
       #"""
@@ -87,7 +251,7 @@ module FlatBuffers
       #"""
 
       assert_not_nested
-      @nested = true
+      self.nested = true
       prep N::Uint32Flags.bytewidth, elem_size * num_elems
       prep alignment, elem_size * num_elems  # In case alignment > int.
       offset
@@ -97,7 +261,7 @@ module FlatBuffers
       #"""EndVector writes data necessary to finish vector construction."""
 
       assert_nested
-      @nested = false
+      self.nested = false
       # we already made space for this, so write without PrependUint32
       place_uoffsett vector_num_elems
       offset
@@ -175,16 +339,58 @@ module FlatBuffers
     end
 
     private
-    class NestedError < StandardError; end
     def assert_not_nested
-      raise NestedError, "Error; it's nested" if @nested
+      raise IsNestedError, "Error; it's nested" if @nested
     end
 
-    class NotNestedError < StandardError; end
     def assert_nested
-      raise NotNestedError, "Error; it's not nested" unless @nested
+      raise IsNotNestedError, "Error; it's not nested" unless @nested
     end
 
-    class BuilderSizeError < StandardError; end
+    class OffsetArithmeticError < RuntimeError
+    #"""
+    #Error caused by an Offset arithmetic error. Probably caused by bad
+    #writing of fields. This is considered an unreachable situation in
+    #normal circumstances.
+    #"""
+    end
+
+    class IsNotNestedError < RuntimeError
+    #"""
+    #Error caused by using a Builder to write Object data when not inside
+    #an Object.
+    #"""
+    end
+
+
+    class IsNestedError < RuntimeError
+    #"""
+    #Error caused by using a Builder to begin an Object when an Object is
+    #already being built.
+    #"""
+    end
+
+
+    class StructIsNotInlineError < RuntimeError
+    #"""
+    #Error caused by using a Builder to write a Struct at a location that
+    #is not the current Offset.
+    #"""
+    end
+
+
+    class BuilderSizeError < RuntimeError
+    #"""
+    #Error caused by causing a Builder to exceed the hardcoded limit of 2
+    #gigabytes.
+    #"""
+    end
+
+    class BuilderNotFinishedError < RuntimeError
+    #"""
+    #Error caused by not calling `Finish` before calling `Output`.
+    #"""
+    end
+
   end  
 end
