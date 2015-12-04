@@ -1,9 +1,8 @@
 module FlatBuffers
   module NumberTypes
       
-    NumFlags = Struct.new :bytewidth,
-      :min_val, :max_val, :rb_type,
-      :name, :packer_type do
+    NumFlags = Struct.new :bytewidth, :min_val, :max_val,
+                          :rb_type, :name, :packer_type do
 
       def rb_type(value = nil)
         return @rb_type unless value
@@ -11,7 +10,7 @@ module FlatBuffers
         n.instance_exec {@value = value}
         n
       end
-            
+      
       def coerce other
         [other, @value]
       end
@@ -23,6 +22,7 @@ module FlatBuffers
       def * other  ;        @value *   other      end
       def / other  ;        @value /   other      end
     end
+
 
     module ::Boolean; end
     class ::FalseClass
@@ -176,10 +176,10 @@ module FlatBuffers
 
       return nil if min.nil? && max.nil?
 
-      unless includes? min, max, n
+      unless includes? min, max, n 
         raise TypeError, "bad number #{n} for type #{flags.name}"
       end
-      n   
+      n.to_i   
     end
 
     def self.float32_to_uint32 n
@@ -208,6 +208,7 @@ module FlatBuffers
 
     class << self
       def includes? min, max, n
+        return true if n.is_a? Boolean
         (min.to_i..max.to_i).include? n
       end
       private :includes?

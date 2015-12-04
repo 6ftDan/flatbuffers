@@ -1,6 +1,7 @@
 $:.unshift '../ruby/lib'
 require 'flatbuffers'
 require 'minitest/autorun'
+require 'minitest/byebug' if ENV["DEBUG"]
 
 module Minitest::Assertions
   def assert_builder_equals builder, want_chars_or_ints
@@ -23,6 +24,7 @@ describe "TestByteLayout" do
   let(:b){ FlatBuffers::Builder.new 0 }
 
   it "test numbers" do
+    skip
     assert_builder_equals b, []
     b.prepend_bool true
     assert_builder_equals b, [1]
@@ -46,19 +48,21 @@ describe "TestByteLayout" do
   end
 
   it "Uint64 numbers" do
-        b.prepend_uint64 0x1122334455667788
-        assert_builder_equals b, [0x88, 0x77, 0x66, 0x55,
-                                  0x44, 0x33, 0x22, 0x11]
+    skip
+    b.prepend_uint64 0x1122334455667788
+    assert_builder_equals b, [0x88, 0x77, 0x66, 0x55,
+                              0x44, 0x33, 0x22, 0x11]
   end
 
   it "Int64 numbers" do
-        b.prepend_int64 0x1122334455667788
-        assert_builder_equals b, [0x88, 0x77, 0x66, 0x55,
-                                  0x44, 0x33, 0x22, 0x11]
+    skip
+    b.prepend_int64 0x1122334455667788
+    assert_builder_equals b, [0x88, 0x77, 0x66, 0x55,
+                              0x44, 0x33, 0x22, 0x11]
   end
 
   it "1xbyte vector" do
-    assert_builder_equals b, []
+    #skip
     b.start_vector FlatBuffers::NumberTypes::Uint8Flags.bytewidth, 1, 1
     assert_builder_equals b, [0, 0, 0] # align to 4bytes
     b.prepend_byte 1
@@ -68,6 +72,7 @@ describe "TestByteLayout" do
   end
 
   it "2xbyte vector" do
+    skip
     b.start_vector FlatBuffers::NumberTypes::Uint8Flags.bytewidth, 2, 1
     assert_builder_equals b, [0, 0] # align to 4bytes
     b.prepend_byte 1
@@ -79,6 +84,7 @@ describe "TestByteLayout" do
   end
 
   it "1xuint16 vector" do
+    skip
     b.start_vector FlatBuffers::NumberTypes::Uint16Flags.bytewidth, 1, 1
     assert_builder_equals b, [0, 0] # align to 4bytes
     b.prepend_uint16 1
@@ -88,6 +94,7 @@ describe "TestByteLayout" do
   end
 
   it "2xuint16 vector" do
+    skip
     b.start_vector FlatBuffers::NumberTypes::Uint16Flags.bytewidth, 2, 1
     assert_builder_equals b, [] # align to 4bytes
     b.prepend_uint16 0xABCD
@@ -99,6 +106,7 @@ describe "TestByteLayout" do
   end
 
   it "create ascii string" do
+    skip
     b.create_string "foo".encode Encoding::US_ASCII
     # 0-terminated, no pad:
     assert_builder_equals b, [3, 0, 0, 0, 'f', 'o', 'o', 0]
@@ -110,6 +118,7 @@ describe "TestByteLayout" do
   end
 
   it "create arbitrary string" do
+    skip
     s = "\x01\x02\x03".encode Encoding::UTF_8
     b.create_string s
     # 0-terminated, no pad:
@@ -122,6 +131,7 @@ describe "TestByteLayout" do
   end
 
   it "empty vtable" do
+    skip
     b.start_object 0
     assert_builder_equals b, []
     b.end_object 
@@ -129,6 +139,7 @@ describe "TestByteLayout" do
   end
 
   it "vtable with one true bool" do
+    skip
     assert_builder_equals b, []
     b.start_object 1
     assert_builder_equals b, []
@@ -145,6 +156,7 @@ describe "TestByteLayout" do
   end
 
   it "vtable with one default bool" do
+    skip
     assert_builder_equals b, []
     b.start_object 1
     assert_builder_equals b, []
@@ -159,6 +171,7 @@ describe "TestByteLayout" do
   end
 
   it "vtable with one int16" do
+    skip
     b.start_object 1
     b.prepend_int16_slot 0, 0x789A, 0
     b.end_object 
@@ -173,6 +186,7 @@ describe "TestByteLayout" do
   end
 
   it "vtable with two int16" do
+    skip
     b.start_object 2
     b.prepend_int16_slot 0, 0x3456, 0
     b.prepend_int16_slot 1, 0x789A, 0
@@ -189,6 +203,7 @@ describe "TestByteLayout" do
   end
 
   it "vtable with int16 and bool" do
+    skip
     b.start_object 2
     b.prepend_int16_slot 0, 0x3456, 0
     b.prepend_bool_slot 1, true, false
@@ -206,6 +221,7 @@ describe "TestByteLayout" do
   end
 
   it "vtable with empty vector" do
+    skip
     b.start_vector FlatBuffers::NumberTypes::Uint8Flags.bytewidth, 0, 1
     vecend = b.end_vector 0
     b.start_object 1
@@ -222,6 +238,7 @@ describe "TestByteLayout" do
   end
 
   it "vtable with empty vector of byte and some scalars" do
+    skip
     b.start_vector FlatBuffers::NumberTypes::Uint8Flags.bytewidth, 0, 1
     vecend = b.end_vector 0
     b.start_object 2
@@ -242,6 +259,7 @@ describe "TestByteLayout" do
   end
 
   it "vtable with 1 int16 and 2vector of int16" do
+    skip
     b.start_vector FlatBuffers::NumberTypes::Int16Flags.bytewidth, 2, 1
     b.prepend_int16 0x1234
     b.prepend_int16 0x5678
@@ -266,6 +284,7 @@ describe "TestByteLayout" do
   end
 
   it "vtable with 1 struct of 1 int8  1 int16  1 int32" do
+    skip
     b.start_object 1
     b.prep 4+4+4, 0
     b.prepend_int8 55
@@ -290,6 +309,7 @@ describe "TestByteLayout" do
   end
 
   it "vtable with 1 vector of 2 struct of 2 int8" do
+    skip
     b.start_vector FlatBuffers::NumberTypes::Int8Flags.bytewidth*2, 2, 1
     b.prepend_int8 33
     b.prepend_int8 44
@@ -315,6 +335,7 @@ describe "TestByteLayout" do
   end
 
   it "table with some elements" do
+    skip
     b.start_object 2
     b.prepend_int8_slot 0, 33, 0
     b.prepend_int16_slot 1, 66, 0
@@ -338,6 +359,7 @@ describe "TestByteLayout" do
   end
 
   it "one unfinished table and one finished table" do
+    skip
     b.start_object 2
     b.prepend_int8_slot 0, 33, 0
     b.prepend_int8_slot 1, 44, 0
@@ -380,6 +402,7 @@ describe "TestByteLayout" do
   end
 
   it "a bunch of bools" do
+    skip
     b.start_object 8
     b.prepend_bool_slot 0, true, false
     b.prepend_bool_slot 1, true, false
@@ -419,6 +442,7 @@ describe "TestByteLayout" do
   end
 
   it "three bools" do
+    skip
     b.start_object 3
     b.prepend_bool_slot 0, true, false
     b.prepend_bool_slot 1, true, false
@@ -446,6 +470,7 @@ describe "TestByteLayout" do
   end
 
   it "some floats" do
+    skip
     b.start_object 1
     b.prepend_float32_slot 0, 1.0, 0.0
     b.end_object 

@@ -89,7 +89,7 @@ module FlatBuffers
         # Find the other vtable, which is associated with `i`:
         vt2_offset = self.vtables[i]
         vt2_start = self.bytes.length - vt2_offset
-        vt2_len = encode.get(packer.voffset, self.bytes, vt2_start)
+        vt2_len = encode.get(VoffsetPacker, self.bytes, vt2_start)
 
         metadata = VtableMetadataFields * N::VOffsetTFlags.bytewidth
         vt2_end = vt2_start + vt2_len
@@ -110,32 +110,32 @@ module FlatBuffers
         # serialization occurs in last-first order:
         i = self.current_vtable.length - 1
         while i >= 0
-            off = 0
-            if self.current_vtable[i] != 0
-                # Forward reference to field;
-                # use 32bit number to ensure no overflow:
-                off = object_offset - self.current_vtable[i]
-            end
-            self.prepend_voffsett off
-            i -= 1
+          off = 0
+          if self.current_vtable[i] != 0
+            # Forward reference to field;
+            # use 32bit number to ensure no overflow:
+            off = object_offset - self.current_vtable[i]
+          end
+          self.prepend_voffsett off
+          i -= 1
         end
 
         # The two metadata fields are written last.
 
         # First, store the object bytesize:
-        object_size = N::UOffsetTFlags.rb_type object_offset - self.object_end
-        self.prepend_voffsett N::VOffsetTFlags.rb_type object_size
+        object_size = N::UOffsetTFlags.rb_type(object_offset - self.object_end)
+        self.prepend_voffsett N::VOffsetTFlags.rb_type(object_size)
 
         # Second, store the vtable bytesize:
         vbytes = self.current_vtable.length + VtableMetadataFields
         vbytes *= N::VOffsetTFlags.bytewidth
-        self.prepend_voffsett N::VOffsetTFlags.rb_type vbytes
+        self.prepend_voffsett N::VOffsetTFlags.rb_type(vbytes)
 
         # Next, write the offset to the new vtable in the
         # already-allocated SOffsetT at the beginning of this object:
-        object_start = N::SOffsetTFlags.rb_type self.bytes.length - object_offset
+        object_start = N::SOffsetTFlags.rb_type(self.bytes.length - object_offset)
         Encode.write packer.soffset, self.bytes, object_start,
-                     N::SOffsetTFlags.rb_type( self.offset - object_offset )
+                     N::SOffsetTFlags.rb_type(self.offset - object_offset)
 
         # Finally, store this vtable in memory for future
         # deduplication:
@@ -149,7 +149,7 @@ module FlatBuffers
         # Write the offset to the found vtable in the
         # already-allocated SOffsetT at the beginning of this object:
         Encode.write packer.soffset, self.bytes, self.head,
-                     N::SOffsetTFlags.rb_type( existing_vtable - object_offset )
+                     N::SOffsetTFlags.rb_type(existing_vtable - object_offset)
       end
       self.current_vtable = nil
       object_offset
@@ -171,42 +171,6 @@ module FlatBuffers
     def head x = nil
       @head ||= x
       @head
-    end
-
-    def prepend_bool bool
-      @bytes.unshift bool ? 0b1 : 0b0
-    end
-
-    def prepend_int8 int8
-      @bytes.unshift int8 & 0xff
-    end
-
-    def prepend_uint8 uint8
-      @bytes.unshift uint8 & 0xff
-    end
-
-    def prepend_int16 int16
-      @bytes.unshift *[int16].pack("sx").bytes
-    end
-    
-    def prepend_uint16 uint16
-      @bytes.unshift *[uint16].pack("v").bytes
-    end
-
-    def prepend_int32 int32
-      @bytes.unshift *[int32].pack("V").bytes
-    end
-
-    def prepend_uint32 uint32
-      @bytes.unshift *[uint32].pack("V").bytes
-    end
-
-    def prepend_uint64 uint64
-      @bytes.unshift *[uint64].pack("Q").bytes
-    end
-    
-    def prepend_int64 int64
-      @bytes.unshift *[int64].pack("q").bytes
     end
 
     def prepend_soffsett_relative off
@@ -335,12 +299,13 @@ module FlatBuffers
         new_size = 1
       end
       bytes2 = Array.new new_size, 0b0
-      bytes2[new_size-self.bytes.length] = self.bytes
+      bytes2.insert new_size-self.bytes.length, *self.bytes
       self.bytes = bytes2
     end
 
     def pad n
       #"""Pad places zeros at the current offset."""
+      byebug
       n.times do
         self.place 0, N::Uint8Flags
       end

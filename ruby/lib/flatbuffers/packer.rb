@@ -1,4 +1,5 @@
 module FlatBuffers
+
   Packer = Struct.new :fmt do
     def pack *values
       values.pack fmt
