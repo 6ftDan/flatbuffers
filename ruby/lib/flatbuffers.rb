@@ -1,6 +1,6 @@
-require "flatbuffers/number_types"
 require "flatbuffers/packer"
 require "flatbuffers/encode"
+require "flatbuffers/number_types"
 
 module FlatBuffers
   class Builder
@@ -88,7 +88,7 @@ module FlatBuffers
 
       assert_not_nested
       @nested = true
-      prep N::Uint32Flags.new.bytewidth, elem_size * num_elems
+      prep N::Uint32Flags.bytewidth, elem_size * num_elems
       prep alignment, elem_size * num_elems  # In case alignment > int.
       offset
     end
@@ -99,7 +99,7 @@ module FlatBuffers
       assert_nested
       @nested = false
       # we already made space for this, so write without PrependUint32
-      place_UOffsetT vector_num_elems
+      place_uoffsett vector_num_elems
       offset
     end
 
@@ -154,7 +154,7 @@ module FlatBuffers
     def pad n
       #"""Pad places zeros at the current offset."""
       n.times do
-        self.place 0, N::Uint8Flags.new
+        self.place 0, N::Uint8Flags
       end
     end
 
@@ -165,7 +165,7 @@ module FlatBuffers
       #"""
 
       x = N.enforce_number x, flags
-      self.head = self.head - flags.bytewidth
+      self.head -= flags.bytewidth
       Encode.write flags.packer_type, self.bytes, self.head, x
     end
 

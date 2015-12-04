@@ -5,7 +5,7 @@ module FlatBuffers
     end
 
     def pack_into buffer, offset, *values
-      buffer.insert offset, values.pack(fmt)
+      buffer[offset] = values.pack fmt #buffer.insert offset, values.pack(fmt) 
     end
 
     def unpack string

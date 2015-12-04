@@ -1,22 +1,17 @@
 module FlatBuffers
   module NumberTypes
       
-    class NumFlags 
-      @@attrs = [:bytewidth, :min_val, :max_val, :rb_type, :name, :packer_type]
-      attr_accessor *@@attrs
-      def initialize **opts
-        @value = 0 # YES/NO/I DON'T KNOW MAYBE NIL ;-)
-        @@attrs.each do |a|
-          instance_variable_set "@#{a}", opts.fetch(a) {nil}
-        end
-      end
+    NumFlags = Struct.new :bytewidth,
+      :min_val, :max_val, :rb_type,
+      :name, :packer_type do
 
-      def self.inherited base
-        def base.rb_type value
-          new.instance_exec {@value = value; self}
-        end
+      def rb_type(value = nil)
+        return @rb_type unless value
+        n = dup
+        n.instance_exec {@value = value}
+        n
       end
-      
+            
       def coerce other
         [other, @value]
       end
@@ -33,163 +28,130 @@ module FlatBuffers
     FalseClass.prepend Boolean
     TrueClass. prepend Boolean
 
-    class BoolFlags < NumFlags
-      def initialize **opts
-        super( {
-          bytewidth:   1,
-          min_val:     false,
-          max_val:     true,
-          rb_type:     Boolean,
-          name:        "bool",
-          packer_type: BooleanPacker
-        }.
-        update opts)
-      end
-    end
+    BoolFlags = NumFlags.new(
+      *{
+        bytewidth:   1,
+        min_val:     false,
+        max_val:     true,
+        rb_type:     Boolean,
+        name:        "bool",
+        packer_type: BooleanPacker
+      }.values
+    )
 
-    class Uint8Flags < NumFlags
-      def initialize **opts
-        super( {
-          bytewidth:   1,
-          min_val:     0,
-          max_val:     (2**8) - 1,
-          rb_type:     Integer,
-          name:        "uint8",
-          packer_type: Uint8Packer 
-        }.
-        update opts)
-      end
-    end
+    Uint8Flags = NumFlags.new(
+      *{
+        bytewidth:   1,
+        min_val:     0,
+        max_val:     (2**8) - 1,
+        rb_type:     Integer,
+        name:        "uint8",
+        packer_type: Uint8Packer 
+      }.values
+    )
 
-    class Uint16Flags < NumFlags
-      def initialize **opts
-        super( {
-          bytewidth:   2,
-          min_val:     0,
-          max_val:     (2**16) - 1,
-          rb_type:     Integer,
-          name:        "uint16",
-          packer_type: Uint16Packer
-        }.
-        update opts)
-      end
-    end
+    Uint16Flags = NumFlags.new(
+      *{
+        bytewidth:   2,
+        min_val:     0,
+        max_val:     (2**16) - 1,
+        rb_type:     Integer,
+        name:        "uint16",
+        packer_type: Uint16Packer
+      }.values
+    )
 
-    class Uint32Flags < NumFlags
-      def initialize **opts
-        super( {
-          bytewidth:   4,
-          min_val:     0,
-          max_val:     (2**32) - 1,
-          rb_type:     Integer,
-          name:        "uint32",
-          packer_type: Uint32Packer
-        }.
-        update opts)
-      end
-    end
+    Uint32Flags = NumFlags.new(
+      *{
+        bytewidth:   4,
+        min_val:     0,
+        max_val:     (2**32) - 1,
+        rb_type:     Integer,
+        name:        "uint32",
+        packer_type: Uint32Packer
+      }.values
+    )
 
-    class Uint64Flags < NumFlags
-      def initialize **opts
-        super( {
-          bytewidth:   8,
-          min_val:     0,
-          max_val:     (2**64) - 1,
-          rb_type:     Integer,
-          name:        "uint64",
-          packer_type: Uint64Packer
-        }.
-        update opts)
-      end
-    end
+    Uint64Flags = NumFlags.new(
+      *{
+        bytewidth:   8,
+        min_val:     0,
+        max_val:     (2**64) - 1,
+        rb_type:     Integer,
+        name:        "uint64",
+        packer_type: Uint64Packer
+      }.values
+    )
 
-    class Int8Flags < NumFlags
-      def initialize **opts
-        super( {
-          bytewidth:   1,
-          min_val:     -(2**7),
-          max_val:     (2**7) - 1,
-          rb_type:     Integer,
-          name:        "int8",
-          packer_type: Int8Packer
-        }.
-        update opts)
-      end
-    end
+    Int8Flags = NumFlags.new(
+      *{
+        bytewidth:   1,
+        min_val:     -(2**7),
+        max_val:     (2**7) - 1,
+        rb_type:     Integer,
+        name:        "int8",
+        packer_type: Int8Packer
+      }.values
+    )
+    
+    Int16Flags = NumFlags.new(
+      *{
+        bytewidth:   2,
+        min_val:     -(2**15),
+        max_val:     (2**15) - 1,
+        rb_type:     Integer,
+        name:        "int16",
+        packer_type: Int16Packer
+      }.values
+    )
+      
+    Int32Flags = NumFlags.new(
+      *{
+        bytewidth:   4,
+        min_val:     -(2**31),
+        max_val:     (2**31) - 1,
+        rb_type:     Integer,
+        name:        "int32",
+        packer_type: Int32Packer
+      }.values
+    )
 
-    class Int16Flags < NumFlags
-      def initialize **opts
-        super( {
-          bytewidth:   2,
-          min_val:     -(2**15),
-          max_val:     (2**15) - 1,
-          rb_type:     Integer,
-          name:        "int16",
-          packer_type: Int16Packer
-        }.
-        update opts)
-      end
-    end
+    Int64Flags = NumFlags.new(
+      *{
+        bytewidth:   8,
+        min_val:     -(2**63),
+        max_val:     (2**63) - 1,
+        rb_type:     Integer,
+        name:        "int64",
+        packer_type: Int64Packer
+      }.values
+    )
 
-    class Int32Flags < NumFlags
-      def initialize **opts
-        super( {
-          bytewidth:   4,
-          min_val:     -(2**31),
-          max_val:     (2**31) - 1,
-          rb_type:     Integer,
-          name:        "int32",
-          packer_type: Int32Packer
-        }.
-        update opts)
-      end
-    end
-
-    class Int64Flags < NumFlags
-      def initialize **opts
-        super( {
-          bytewidth:   8,
-          min_val:     -(2**63),
-          max_val:     (2**63) - 1,
-          rb_type:     Integer,
-          name:        "int64",
-          packer_type: Int64Packer
-        }.
-        update opts)
-      end
-    end
-
-    class Float32Flags < NumFlags
-      def initialize **opts
-        super( {
-          bytewidth:   4,
-          min_val:     nil,
-          max_val:     nil,
-          rb_type:     Float,
-          name:        "float32",
-          packer_type: Float32Packer
-        }.
-        update opts)
-      end
-    end
-
-    class Float64Flags < NumFlags
-      def initialize **opts
-        super( {
-          bytewidth:   8,
-          min_val:     nil,
-          max_val:     nil,
-          rb_type:     Float,
-          name:        "float64",
-          packer_type: Float64Packer
-        }.
-        update opts)
-      end
-    end
-
-    class SOffsetTFlags < Int32Flags;  end
-    class UOffsetTFlags < Uint32Flags; end
-    class VOffsetTFlags < Uint16Flags; end
+    Float32Flags = NumFlags.new(
+      *{
+        bytewidth:   4,
+        min_val:     nil,
+        max_val:     nil,
+        rb_type:     Float,
+        name:        "float32",
+        packer_type: Float32Packer
+      }.values
+    )
+    
+    Float64Flags = NumFlags.new(
+      *{
+        bytewidth:   8,
+        min_val:     nil,
+        max_val:     nil,
+        rb_type:     Float,
+        name:        "float64",
+        packer_type: Float64Packer
+      }.values
+    )
+    
+    SOffsetTFlags = Int32Flags
+    UOffsetTFlags = Uint32Flags
+    VOffsetTFlags = Uint16Flags
 
     def self.valid_number? n, flags
       min = flags.min_val
