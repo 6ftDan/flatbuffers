@@ -12,7 +12,7 @@ module FlatBuffers
     N = NumberTypes
     
     attr_accessor :minalign, :bytes, :head, :current_vtable, :object_end,
-                  :nested
+                  :nested, :vtables
     
     def initialize initial_size
       #"""
@@ -22,7 +22,7 @@ module FlatBuffers
 
       unless (0..MAX_BUFFER_SIZE).include? initial_size
         msg = "flatbuffers: Cannot create Builder larger than 2 gigabytes."
-        raise BuilderSizeError(msg)
+        raise BuilderSizeError, msg
       end
 
       @bytes = Array.new initial_size, 0b0
@@ -114,7 +114,7 @@ module FlatBuffers
             if self.current_vtable[i] != 0
                 # Forward reference to field;
                 # use 32bit number to ensure no overflow:
-                off = objectOffset - self.current_vtable[i]
+                off = object_offset - self.current_vtable[i]
             end
             self.prepend_voffsett off
             i -= 1
@@ -134,7 +134,7 @@ module FlatBuffers
         # Next, write the offset to the new vtable in the
         # already-allocated SOffsetT at the beginning of this object:
         object_start = N::SOffsetTFlags.rb_type self.bytes.length - object_offset
-        encode.write packer.soffset, self.bytes, object_start,
+        Encode.write packer.soffset, self.bytes, object_start,
                      N::SOffsetTFlags.rb_type( self.offset - object_offset )
 
         # Finally, store this vtable in memory for future
@@ -148,7 +148,7 @@ module FlatBuffers
 
         # Write the offset to the found vtable in the
         # already-allocated SOffsetT at the beginning of this object:
-        encode.write packer.soffset, self.bytes, self.head,
+        Encode.write packer.soffset, self.bytes, self.head,
                      N::SOffsetTFlags.rb_type( existing_vtable - object_offset )
       end
       self.current_vtable = nil
@@ -267,6 +267,30 @@ module FlatBuffers
       offset
     end
 
+    def create_string s
+      #"""CreateString writes a null-terminated byte string as a vector."""
+
+      assert_not_nested
+      self.nested = true
+
+      if s.is_a? String
+        x = s.encode
+      elsif s.is_a? Integer # binary(Python 3.0+) and str(Python 2.0+)
+        x = s
+      else
+        raise TypeError, "non-string passed to create_string"
+      end
+
+      self.prep N::UOffsetTFlags.bytewidth, (x.length+1)*N::Uint8Flags.bytewidth
+      self.place 0, N::Uint8Flags
+
+      l = N::UOffsetTFlags.rb_type(s.length)
+
+      self.head = N::UOffsetTFlags.rb_type(self.head - l)
+      self.bytes[self.head..self.head+l] = x
+
+      self.end_vector(x.length)
+    end
 
     def prep size, additional_bytes
       #"""
@@ -322,6 +346,93 @@ module FlatBuffers
       end
     end
 
+    def slot slotnum
+      #"""
+      #Slot sets the vtable key `voffset` to the current location in the
+      #buffer.
+      #
+      #"""
+      assert_nested
+      self.current_vtable[slotnum] = self.offset
+    end
+
+    def finish root_table
+      #"""Finish finalizes a buffer, pointing to the given `rootTable`."""
+      N.enforce_number root_table, N::UOffsetTFlags
+      self.prep self.minalign, N::UOffsetTFlags.bytewidth
+      self.prepend_uoffsett_relative root_table
+      self.finished = true
+      self.head
+    end
+
+    def prepender flags, off
+      self.prep flags.bytewidth, 0
+      self.place off, flags
+    end
+
+    def prepend_slot flags, o, x, d
+      N.enforce_number x, flags
+      N.enforce_number d, flags
+      if x != d
+        self.prepender flags, x
+        self.slot o
+      end
+    end
+
+    def prepend_bool_slot    *args; prepend_slot N::BoolFlags,    *args; end
+    def prepend_byte_slot    *args; prepend_slot N::Uint8Flags,   *args; end
+    def prepend_uint8_slot   *args; prepend_slot N::Uint8Flags,   *args; end
+    def prepend_uint16_slot  *args; prepend_slot N::Uint16Flags,  *args; end
+    def prepend_uint32_slot  *args; prepend_slot N::Uint32Flags,  *args; end
+    def prepend_uint64_slot  *args; prepend_slot N::Uint64Flags,  *args; end
+    def prepend_int8_slot    *args; prepend_slot N::Int8Flags,    *args; end
+    def prepend_int16_slot   *args; prepend_slot N::Int16Flags,   *args; end
+    def prepend_int32_slot   *args; prepend_slot N::Int32Flags,   *args; end
+    def prepend_int64_slot   *args; prepend_slot N::Int64Flags,   *args; end
+    def prepend_float32_slot *args; prepend_slot N::Float32Flags, *args; end
+    def prepend_float64_slot *args; prepend_slot N::Float64Flags, *args; end
+
+    def prepend_uoffsett_relative_slot o, x, d
+      #"""
+      #PrependUOffsetTRelativeSlot prepends an UOffsetT onto the object at
+      #vtable slot `o`. If value `x` equals default `d`, then the slot will
+      #be set to zero and no other data will be written.
+      #"""
+
+      if x != d
+        self.prepend_uoffsett_relative x
+        self.slot o
+      end
+    end
+
+    def prepend_struct_slot v, x, d
+      #"""
+      #PrependStructSlot prepends a struct onto the object at vtable slot `o`.
+      #Structs are stored inline, so nothing additional is being added.
+      #In generated code, `d` is always 0.
+      #"""
+
+      N.enforce_number d, N::UOffsetTFlags
+      if x != d
+        self.assert_struct_is_inline x
+        self.slot v
+      end
+    end
+
+    def prepend_bool      x; prepender N::BoolFlags,     x; end
+    def prepend_byte      x; prepender N::Uint8Flags,    x; end
+    def prepend_uint8     x; prepender N::Uint8Flags,    x; end
+    def prepend_uint16    x; prepender N::Uint16Flags,   x; end
+    def prepend_uint32    x; prepender N::Uint32Flags,   x; end
+    def prepend_uint64    x; prepender N::Uint64Flags,   x; end
+    def prepend_int8      x; prepender N::Int8Flags,     x; end
+    def prepend_int16     x; prepender N::Int16Flags,    x; end
+    def prepend_int32     x; prepender N::Int32Flags,    x; end
+    def prepend_int64     x; prepender N::Int64Flags,    x; end
+    def prepend_float32   x; prepender N::Float32Flags,  x; end
+    def prepend_float64   x; prepender N::Float64Flags,  x; end
+    def prepend_voffsett  x; prepender N::VOffsetTFlags, x; end
+
     def place x, flags
       #"""
       #Place prepends a value specified by `flags` to the Builder,
@@ -331,6 +442,36 @@ module FlatBuffers
       x = N.enforce_number x, flags
       self.head -= flags.bytewidth
       Encode.write flags.packer_type, self.bytes, self.head, x
+    end
+
+    def place_voffsett x
+      #"""
+      #PlaceVOffsetT prepends a VOffsetT to the Builder, without checking for
+      #space.
+      #"""
+      N.enforce_number x, N::VOffsetTFlags
+      self.head -= N::VOffsetTFlags.bytewidth
+      Encode.write VoffsetPacker, self.bytes, self.head, x
+    end
+
+    def place_soffsett x
+      #"""
+      #PlaceSOffsetT prepends a SOffsetT to the Builder, without checking for
+      #space.
+      #"""
+      N.enforce_number x, N::SOffsetTFlags
+      self.head -= N::SOffsetTFlags.bytewidth
+      Encode.write SoffsetPacker, self.bytes, self.head, x
+    end
+
+    def place_uoffsett x
+      #"""
+      #PlaceUOffsetT prepends a UOffsetT to the Builder, without checking for
+      #space.
+      #"""
+      N.enforce_number x, N::UOffsetTFlags
+      self.head -= N::UOffsetTFlags.bytewidth
+      Encode.write UoffsetPacker, self.bytes, self.head, x
     end
 
     def offset

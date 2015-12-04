@@ -99,10 +99,10 @@ describe "TestByteLayout" do
   end
 
   it "create ascii string" do
-    b.create_string u"foo".encode('ascii')
+    b.create_string "foo".encode Encoding::US_ASCII
     # 0-terminated, no pad:
     assert_builder_equals b, [3, 0, 0, 0, 'f', 'o', 'o', 0]
-    b.create_string u"moop".encode('ascii')
+    b.create_string "moop".encode Encoding::US_ASCII
     # 0-terminated, 3-byte pad:
     assert_builder_equals b, [4, 0, 0, 0, 'm', 'o', 'o', 'p',
                                  0, 0, 0, 0,
@@ -110,11 +110,11 @@ describe "TestByteLayout" do
   end
 
   it "create arbitrary string" do
-    s = "\x01\x02\x03".encode('utf-8')
+    s = "\x01\x02\x03".encode Encoding::UTF_8
     b.create_string s
     # 0-terminated, no pad:
     assert_builder_equals b, [3, 0, 0, 0, 1, 2, 3, 0]
-    s2 = "\x04\x05\x06\x07".encode('utf-8')
+    s2 = "\x04\x05\x06\x07".encode Encoding::UTF_8
     b.create_string s2
     # 0-terminated, 3-byte pad:
     assert_builder_equals b, [4, 0, 0, 0, 4, 5, 6, 7, 0, 0, 0, 0,
