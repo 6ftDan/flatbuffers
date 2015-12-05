@@ -52,6 +52,7 @@ module FlatBuffers
       when Range
         @bytes[slice] = *input 
       when Integer
+        assert_in_range slice
         @bytes.insert slice, *input
       end unless input.empty?
     end
@@ -65,6 +66,8 @@ module FlatBuffers
     end
 
     def insert position, *what
+      assert_in_range position
+
       what = what.map(&method(:to_bytes)).flatten
       @bytes.insert position, *what unless what.empty?
     end
@@ -98,7 +101,7 @@ module FlatBuffers
       when String
         input.unpack("C*")
       when Integer
-        raise ByteOutOfRangeError, "Integer #{input} is to large to be a Byte" unless input < 256
+        raise OutOfRangeError, "Integer #{input} is to large to be a Byte" unless input < 256
         [input]
       when Byte
         return [input]
@@ -111,7 +114,15 @@ module FlatBuffers
       end
       b.map &Byte
     end
+
+    def assert_in_range index
+      unless (0..@bytes.length).include? index
+        raise OutOfRangeError,
+          "Range Exceeded! #{index} is outside of 0..#{@bytes.length}"
+      end
+      true
+    end
   end
-  class ByteOutOfRangeError < StandardError
+  class OutOfRangeError < StandardError
   end
 end
