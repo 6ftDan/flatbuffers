@@ -3,28 +3,11 @@ module FlatBuffers
       
     NumFlags = Struct.new :bytewidth, :min_val, :max_val,
                           :rb_type, :name, :packer_type do
-
-      def rb_type(value = nil)
-        return @rb_type unless value
-        n = dup
-        n.instance_exec {@value = value}
-        n
+      
+      def rb_type(value)
+        value * bytewidth
       end
 
-      def to_int
-        @value
-      end
-            
-      def coerce other
-        [other, @value]
-      end
-
-      include Comparable
-      def <=> other;        @value <=> other      end
-      def + other  ;        @value +   other      end
-      def - other  ;        @value -   other      end
-      def * other  ;        @value *   other      end
-      def / other  ;        @value /   other      end
     end
 
 

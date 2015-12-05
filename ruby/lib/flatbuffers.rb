@@ -42,7 +42,7 @@ module FlatBuffers
       assert_not_nested
 
       # use 32-bit offsets so that arithmetic doesn't overflow.
-      self.current_vtable = ByteArray.new numfields, 0 
+      self.current_vtable = ByteArray.new numfields, 0b0 
       self.object_end = self.offset
       self.minalign = 1
       self.nested = true
@@ -90,7 +90,7 @@ module FlatBuffers
         # Find the other vtable, which is associated with `i`:
         vt2_offset = self.vtables[i]
         vt2_start = @bytes.length - vt2_offset
-        vt2_len = encode.get(VoffsetPacker, @bytes, vt2_start)
+        vt2_len = Encode.get(VoffsetPacker, @bytes, vt2_start)
 
         metadata = VtableMetadataFields * N::VOffsetTFlags.bytewidth
         vt2_end = vt2_start + vt2_len

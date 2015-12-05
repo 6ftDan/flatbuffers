@@ -7,9 +7,9 @@ module FlatBuffers
         val
       when String
         raise StandardError, "#{val} is too large for Byte" if val.length > 1
-        val.unpack("C")
+        val.unpack("C").first
       else
-        raise TypeError, "Wrong type for Byte"
+        raise TypeError, "Wrong type #{val.class} for Byte"
       end
     end
 
@@ -34,7 +34,7 @@ module FlatBuffers
       @bytes = []
       size.times do @bytes << Byte[obj] end
     end
-    
+     
     def self.[] array = []
       return array if array.is_a? ByteArray
       b = new
@@ -42,8 +42,27 @@ module FlatBuffers
       b
     end
 
+    def [] slice
+      ByteArray[@bytes[slice]]
+    end
+
+    def []= slice, *input
+      input = input.map(&method(:to_bytes)).flatten
+      case slice
+      when Range
+        @bytes[slice] = *input 
+      when Integer
+        @bytes.insert slice, *input
+      end unless input.empty?
+    end
+
+    def length
+      @bytes.length
+    end
+
     def insert position, *what
-      @bytes.insert position, *what.map(&Byte.method(:[]))
+      what = what.map(&method(:to_bytes)).flatten
+      @bytes.insert position, *what unless what.empty?
     end
 
     def == other
@@ -59,9 +78,36 @@ module FlatBuffers
       @bytes
     end
 
+    def to_a
+      @bytes
+    end
+
     def method_missing m, *a, &b
+      #puts "Method #{m} called with", *a
       @bytes.send m, *a, &b
     end
-  end
 
+    private
+    # to_bytes always returns Array of Bytes
+    def to_bytes input
+      b = case input
+      when String
+        input.unpack("C*")
+      when Integer
+        raise ByteOutOfRangeError, "Integer #{input} is to large to be a Byte" unless input < 256
+        [input]
+      when Byte
+        [input]
+      when Array
+        input
+      when NilClass
+        []
+      else
+        raise TypeError, "Unexpected type #{input.class} for ByteArray#to_bytes"
+      end
+      b.map(&Byte.method(:[]))
+    end
+  end
+  class ByteOutOfRangeError < StandardError
+  end
 end

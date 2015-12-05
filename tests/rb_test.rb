@@ -7,7 +7,7 @@ module Minitest::Assertions
   def assert_builder_equals builder, want_chars_or_ints
     integerize = ->x{ x.is_a?(String) ? x.ord : x }
 
-    want_ints = Array want_chars_or_ints.map &integerize
+    want_ints = FlatBuffers::ByteArray[ want_chars_or_ints.map &integerize ]
     want = want_ints #.pack("c*")
     got = builder.bytes[builder.head..-1] # use the buffer directly
     assert_equal want, got
