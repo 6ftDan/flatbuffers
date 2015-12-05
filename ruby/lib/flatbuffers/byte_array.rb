@@ -46,6 +46,19 @@ module FlatBuffers
       @bytes.insert position, *what.map(&Byte.method(:[]))
     end
 
+    def == other
+      return false if other.length != @bytes.length
+      ByteArray[other].zip(@bytes).all?{|a,b| a == b}
+    end
+    
+    def coerce other
+      [ByteArray[other], self]
+    end
+
+    def to_ary
+      @bytes
+    end
+
     def method_missing m, *a, &b
       @bytes.send m, *a, &b
     end
