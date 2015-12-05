@@ -1,3 +1,4 @@
+require "flatbuffers/byte_array"
 require "flatbuffers/packer"
 require "flatbuffers/encode"
 require "flatbuffers/number_types"
@@ -25,7 +26,7 @@ module FlatBuffers
         raise BuilderSizeError, msg
       end
 
-      @bytes = Array.new initial_size, 0b0
+      @bytes = ByteArray.new initial_size, 0b0
       @current_vtable = nil
       @head = N::UOffsetTFlags.rb_type(initial_size)
       @minalign = 1
@@ -41,7 +42,7 @@ module FlatBuffers
       assert_not_nested
 
       # use 32-bit offsets so that arithmetic doesn't overflow.
-      self.current_vtable = Array.new numfields, 0 
+      self.current_vtable = ByteArray.new numfields, 0 
       self.object_end = self.offset
       self.minalign = 1
       self.nested = true
@@ -298,7 +299,7 @@ module FlatBuffers
       if new_size == 0
         new_size = 1
       end
-      bytes2 = Array.new new_size, 0b0
+      bytes2 = ByteArray.new new_size, 0b0
       bytes2.insert new_size-self.bytes.length, *self.bytes
       self.bytes = bytes2
     end
