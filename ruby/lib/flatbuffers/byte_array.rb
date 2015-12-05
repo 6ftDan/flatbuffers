@@ -101,7 +101,7 @@ module FlatBuffers
         raise ByteOutOfRangeError, "Integer #{input} is to large to be a Byte" unless input < 256
         [input]
       when Byte
-        [input]
+        return [input]
       when Array
         input
       when NilClass
