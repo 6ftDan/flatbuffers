@@ -17,6 +17,7 @@ module FlatBuffers
       obj.is_a?(Byte) ? obj : Byte.new(obj)
     end
 
+    def inspect;     @value                end
     def to_i;        @value                end
     def to_s;        [@value].pack("C")    end
     def to_str;      to_s                  end
@@ -58,6 +59,10 @@ module FlatBuffers
 
     def length
       @bytes.length
+    end
+
+    def inspect
+      "ByteArray#{@bytes}"
     end
 
     def insert position, *what
