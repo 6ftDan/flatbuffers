@@ -4,7 +4,7 @@ module FlatBuffers
     NumFlags = Struct.new :bytewidth, :min_val, :max_val,
                           :rb_type, :name, :packer_type do
       
-      def rb_type(value)
+      def rb_type value 
         value * bytewidth
       end
 

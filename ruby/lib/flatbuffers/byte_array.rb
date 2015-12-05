@@ -13,9 +13,8 @@ module FlatBuffers
       end
     end
 
-    def self.[] obj
-      obj.is_a?(Byte) ? obj : Byte.new(obj)
-    end
+    def self.[] obj;     obj.is_a?(Byte) ? obj : Byte.new(obj)    end
+    def self.to_proc;    ->obj{self[obj]}                         end
 
     def inspect;     @value                end
     def to_i;        @value                end
@@ -110,7 +109,7 @@ module FlatBuffers
       else
         raise TypeError, "Unexpected type #{input.class} for ByteArray#to_bytes"
       end
-      b.map(&Byte.method(:[]))
+      b.map &Byte
     end
   end
   class ByteOutOfRangeError < StandardError
