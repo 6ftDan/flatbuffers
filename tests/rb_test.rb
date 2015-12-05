@@ -9,7 +9,7 @@ module Minitest::Assertions
 
     want_ints = Array want_chars_or_ints.map &integerize
     want = want_ints #.pack("c*")
-    got = builder.bytes builder.head # use the buffer directly
+    got = builder.bytes[builder.head..-1] # use the buffer directly
     assert_equal want, got
   end
 end
@@ -24,7 +24,7 @@ describe "TestByteLayout" do
   let(:b){ FlatBuffers::Builder.new 0 }
 
   it "test numbers" do
-    skip
+    #skip
     assert_builder_equals b, []
     b.prepend_bool true
     assert_builder_equals b, [1]
@@ -62,7 +62,7 @@ describe "TestByteLayout" do
   end
 
   it "1xbyte vector" do
-    #skip
+    skip
     b.start_vector FlatBuffers::NumberTypes::Uint8Flags.bytewidth, 1, 1
     assert_builder_equals b, [0, 0, 0] # align to 4bytes
     b.prepend_byte 1

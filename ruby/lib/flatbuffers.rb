@@ -89,12 +89,12 @@ module FlatBuffers
       while i >= 0
         # Find the other vtable, which is associated with `i`:
         vt2_offset = self.vtables[i]
-        vt2_start = self.bytes.length - vt2_offset
-        vt2_len = encode.get(VoffsetPacker, self.bytes, vt2_start)
+        vt2_start = @bytes.length - vt2_offset
+        vt2_len = encode.get(VoffsetPacker, @bytes, vt2_start)
 
         metadata = VtableMetadataFields * N::VOffsetTFlags.bytewidth
         vt2_end = vt2_start + vt2_len
-        vt2 = self.bytes[vt2_start+metadata..vt2_end]
+        vt2 = @bytes[vt2_start+metadata..vt2_end]
 
         # Compare the other vtable to the one under consideration.
         # If they are equal, store the offset and break:
@@ -134,8 +134,8 @@ module FlatBuffers
 
         # Next, write the offset to the new vtable in the
         # already-allocated SOffsetT at the beginning of this object:
-        object_start = N::SOffsetTFlags.rb_type(self.bytes.length - object_offset)
-        Encode.write packer.soffset, self.bytes, object_start,
+        object_start = N::SOffsetTFlags.rb_type(@bytes.length - object_offset)
+        Encode.write packer.soffset, @bytes, object_start,
                      N::SOffsetTFlags.rb_type(self.offset - object_offset)
 
         # Finally, store this vtable in memory for future
@@ -144,12 +144,12 @@ module FlatBuffers
       else
         # Found a duplicate vtable.
 
-        object_start = N::SOffsetTFlags.rb_type(self.bytes.length - object_offset)
-        self.head = N::UOffsetTFlags.rb_type(object_start)
+        object_start = N::SOffsetTFlags.rb_type(@bytes.length - object_offset)
+        @head = N::UOffsetTFlags.rb_type(object_start)
 
         # Write the offset to the found vtable in the
         # already-allocated SOffsetT at the beginning of this object:
-        Encode.write packer.soffset, self.bytes, self.head,
+        Encode.write packer.soffset, @bytes, @head,
                      N::SOffsetTFlags.rb_type(existing_vtable - object_offset)
       end
       self.current_vtable = nil
@@ -162,16 +162,6 @@ module FlatBuffers
       assert_nested
       self.nested = false
       write_vtable
-    end
-
-    def bytes x = nil
-      @bytes ||= x
-      @bytes
-    end
-
-    def head x = nil
-      @head ||= x
-      @head
     end
 
     def prepend_soffsett_relative off
@@ -251,8 +241,8 @@ module FlatBuffers
 
       l = N::UOffsetTFlags.rb_type(s.length)
 
-      self.head = N::UOffsetTFlags.rb_type(self.head - l)
-      self.bytes[self.head..self.head+l] = x
+      @head = N::UOffsetTFlags.rb_type(@head - l)
+      @bytes[@head..@head+l] = x
 
       self.end_vector(x.length)
     end
@@ -273,15 +263,15 @@ module FlatBuffers
 
       # Find the amount of alignment needed such that `size` is properly
       # aligned after `additional_bytes`:
-      align_size = (~(self.bytes.length - self.head + additional_bytes)) + 1
+      align_size = (~(@bytes.length - @head + additional_bytes)) + 1
       align_size &= (size - 1)
 
       # Reallocate the buffer if needed:
-      while self.head < align_size + size + additional_bytes
-        old_buf_size = self.bytes.length
+      while @head < align_size + size + additional_bytes
+        old_buf_size = @bytes.length
         self.grow_byte_buffer
-        updated_head = self.head + self.bytes.length - old_buf_size
-        self.head = N::UOffsetTFlags.rb_type(updated_head)
+        updated_head = @head + @bytes.length - old_buf_size
+        @head = N::UOffsetTFlags.rb_type(updated_head)
       end
       self.pad(align_size)
     end
@@ -290,23 +280,22 @@ module FlatBuffers
     def grow_byte_buffer
       #"""Doubles the size of the byteslice, and copies the old data towards
       #   the end of the new buffer (since we build the buffer backwards)."""
-      if self.bytes.length == MAX_BUFFER_SIZE
+      if @bytes.length == MAX_BUFFER_SIZE
         msg = "flatbuffers: cannot grow buffer beyond 2 gigabytes"
         raise BuilderSizeError, msg
       end
 
-      new_size = [self.bytes.length * 2, MAX_BUFFER_SIZE].min
+      new_size = [@bytes.length * 2, MAX_BUFFER_SIZE].min
       if new_size == 0
         new_size = 1
       end
       bytes2 = ByteArray.new new_size, 0b0
-      bytes2.insert new_size-self.bytes.length, *self.bytes
-      self.bytes = bytes2
+      bytes2.insert new_size-@bytes.length, *@bytes
+      @bytes = bytes2
     end
 
     def pad n
       #"""Pad places zeros at the current offset."""
-      byebug
       n.times do
         self.place 0, N::Uint8Flags
       end
@@ -328,7 +317,7 @@ module FlatBuffers
       self.prep self.minalign, N::UOffsetTFlags.bytewidth
       self.prepend_uoffsett_relative root_table
       self.finished = true
-      self.head
+      @head
     end
 
     def prepender flags, off
@@ -406,8 +395,8 @@ module FlatBuffers
       #"""
 
       x = N.enforce_number x, flags
-      self.head -= flags.bytewidth
-      Encode.write flags.packer_type, self.bytes, self.head, x
+      @head -= flags.bytewidth
+      Encode.write flags.packer_type, @bytes, @head, x
     end
 
     def place_voffsett x
@@ -416,8 +405,8 @@ module FlatBuffers
       #space.
       #"""
       N.enforce_number x, N::VOffsetTFlags
-      self.head -= N::VOffsetTFlags.bytewidth
-      Encode.write VoffsetPacker, self.bytes, self.head, x
+      @head -= N::VOffsetTFlags.bytewidth
+      Encode.write VoffsetPacker, @bytes, @head, x
     end
 
     def place_soffsett x
@@ -426,8 +415,8 @@ module FlatBuffers
       #space.
       #"""
       N.enforce_number x, N::SOffsetTFlags
-      self.head -= N::SOffsetTFlags.bytewidth
-      Encode.write SoffsetPacker, self.bytes, self.head, x
+      @head -= N::SOffsetTFlags.bytewidth
+      Encode.write SoffsetPacker, @bytes, @head, x
     end
 
     def place_uoffsett x
@@ -436,13 +425,13 @@ module FlatBuffers
       #space.
       #"""
       N.enforce_number x, N::UOffsetTFlags
-      self.head -= N::UOffsetTFlags.bytewidth
-      Encode.write UoffsetPacker, self.bytes, self.head, x
+      @head -= N::UOffsetTFlags.bytewidth
+      Encode.write UoffsetPacker, @bytes, @head, x
     end
 
     def offset
       #"""Offset relative to the end of the buffer."""
-      N::UOffsetTFlags.rb_type(self.bytes.length - self.head)
+      N::UOffsetTFlags.rb_type(@bytes.length - @head)
     end
 
     private

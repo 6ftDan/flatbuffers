@@ -10,7 +10,11 @@ module FlatBuffers
         n.instance_exec {@value = value}
         n
       end
-      
+
+      def to_int
+        @value
+      end
+            
       def coerce other
         [other, @value]
       end
