@@ -1,3 +1,10 @@
+# This file: ByteArray & Byte is authored by Daniel P. Clark
+# ByteArray is licensed under MIT and future versions will be
+# available at https://github.com/danielpclark/byte_array
+# I also choose to dual license this code as this project is
+# under and Apache 2 License.  This will share that license
+# for this project as well.
+
 module FlatBuffers
   class Byte
     def initialize val
