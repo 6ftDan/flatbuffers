@@ -24,7 +24,6 @@ describe "TestByteLayout" do
   let(:b){ FlatBuffers::Builder.new 0 }
 
   it "test numbers" do
-    #skip
     assert_builder_equals b, []
     b.prepend_bool true
     assert_builder_equals b, [1]
@@ -48,21 +47,18 @@ describe "TestByteLayout" do
   end
 
   it "Uint64 numbers" do
-    skip
     b.prepend_uint64 0x1122334455667788
     assert_builder_equals b, [0x88, 0x77, 0x66, 0x55,
                               0x44, 0x33, 0x22, 0x11]
   end
 
   it "Int64 numbers" do
-    skip
     b.prepend_int64 0x1122334455667788
     assert_builder_equals b, [0x88, 0x77, 0x66, 0x55,
                               0x44, 0x33, 0x22, 0x11]
   end
 
   it "1xbyte vector" do
-    skip
     b.start_vector FlatBuffers::NumberTypes::Uint8Flags.bytewidth, 1, 1
     assert_builder_equals b, [0, 0, 0] # align to 4bytes
     b.prepend_byte 1
@@ -72,7 +68,6 @@ describe "TestByteLayout" do
   end
 
   it "2xbyte vector" do
-    skip
     b.start_vector FlatBuffers::NumberTypes::Uint8Flags.bytewidth, 2, 1
     assert_builder_equals b, [0, 0] # align to 4bytes
     b.prepend_byte 1
@@ -84,7 +79,6 @@ describe "TestByteLayout" do
   end
 
   it "1xuint16 vector" do
-    skip
     b.start_vector FlatBuffers::NumberTypes::Uint16Flags.bytewidth, 1, 1
     assert_builder_equals b, [0, 0] # align to 4bytes
     b.prepend_uint16 1
@@ -94,7 +88,6 @@ describe "TestByteLayout" do
   end
 
   it "2xuint16 vector" do
-    skip
     b.start_vector FlatBuffers::NumberTypes::Uint16Flags.bytewidth, 2, 1
     assert_builder_equals b, [] # align to 4bytes
     b.prepend_uint16 0xABCD
@@ -106,7 +99,6 @@ describe "TestByteLayout" do
   end
 
   it "create ascii string" do
-    skip
     b.create_string "foo".encode Encoding::US_ASCII
     # 0-terminated, no pad:
     assert_builder_equals b, [3, 0, 0, 0, 'f', 'o', 'o', 0]
@@ -118,7 +110,6 @@ describe "TestByteLayout" do
   end
 
   it "create arbitrary string" do
-    skip
     s = "\x01\x02\x03".encode Encoding::UTF_8
     b.create_string s
     # 0-terminated, no pad:
