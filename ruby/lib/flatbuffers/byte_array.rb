@@ -43,7 +43,12 @@ module FlatBuffers
     end
 
     def [] slice
-      ByteArray[@bytes[slice]]
+      case slice
+      when Range
+        ByteArray[@bytes[slice]]
+      when Integer
+        @bytes[slice]
+      end
     end
 
     def []= slice, *input

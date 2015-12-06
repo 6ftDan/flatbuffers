@@ -8,7 +8,7 @@ module FlatBuffers
     N = NumberTypes
     
     attr_accessor :minalign, :bytes, :head, :current_vtable, :object_end,
-                  :nested, :vtables
+                  :nested, :vtables, :finished
     
     def initialize initial_size
       #"""
@@ -364,7 +364,7 @@ module FlatBuffers
 
       N.enforce_number d, N::UOffsetTFlags
       if x != d
-        self.assert_struct_is_inline x
+        assert_struct_is_inline x
         self.slot v
       end
     end
@@ -436,6 +436,21 @@ module FlatBuffers
 
     def assert_nested
       raise IsNotNestedError, "Error; it's not nested" unless @nested
+    end
+
+    def assert_struct_is_inline obj
+      #"""
+      #Structs are always stored inline, so need to be created right
+      #where they are used. You'll get this error if you created it
+      #elsewhere.
+      #"""
+
+      N.enforce_number obj, N::UOffsetTFlags
+      if obj != self.offset
+        msg = ("flatbuffers: Tried to write a Struct at an Offset that \
+               is different from the current Offset of the Builder.")
+        raise StructIsNotInlineError, msg
+      end
     end
 
     class OffsetArithmeticError < RuntimeError
