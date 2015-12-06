@@ -122,7 +122,6 @@ describe "TestByteLayout" do
   end
 
   it "empty vtable" do
-    skip
     b.start_object 0
     assert_builder_equals b, []
     b.end_object 

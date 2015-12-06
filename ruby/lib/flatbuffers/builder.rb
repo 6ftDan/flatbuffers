@@ -130,12 +130,12 @@ module FlatBuffers
         # Next, write the offset to the new vtable in the
         # already-allocated SOffsetT at the beginning of this object:
         object_start = N::SOffsetTFlags.rb_type(@bytes.length - object_offset)
-        Encode.write packer.soffset, @bytes, object_start,
+        Encode.write SoffsetPacker, @bytes, object_start,
                      N::SOffsetTFlags.rb_type(self.offset - object_offset)
 
         # Finally, store this vtable in memory for future
         # deduplication:
-        self.vtables.append self.offset
+        self.vtables.push self.offset
       else
         # Found a duplicate vtable.
 
@@ -144,7 +144,7 @@ module FlatBuffers
 
         # Write the offset to the found vtable in the
         # already-allocated SOffsetT at the beginning of this object:
-        Encode.write packer.soffset, @bytes, @head,
+        Encode.write SoffsetPacker, @bytes, @head,
                      N::SOffsetTFlags.rb_type(existing_vtable - object_offset)
       end
       self.current_vtable = nil
