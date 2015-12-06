@@ -237,7 +237,7 @@ module FlatBuffers
       l = N::UOffsetTFlags.rb_type(s.length)
 
       @head = N::UOffsetTFlags.rb_type(@head - l)
-      @bytes[@head..@head+l] = x
+      @bytes[@head...@head+l] = x
 
       self.end_vector(x.length)
     end
