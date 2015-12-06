@@ -6,7 +6,6 @@ module FlatBuffers
       
       def rb_type value 
         value
-        #value * bytewidth
       end
 
     end

@@ -52,7 +52,7 @@ module FlatBuffers
     end
 
     def []= slice, *input
-      input = input.map(&method(:to_bytes)).flatten
+      input = input.flat_map(&method(:to_bytes))
       case slice
       when Range
         @bytes[slice] = *input 
@@ -72,7 +72,7 @@ module FlatBuffers
     def insert position, *what
       assert_in_range position
 
-      what = what.map(&method(:to_bytes)).flatten
+      what = what.flat_map(&method(:to_bytes))
       @bytes[position..position+what.length-1] = what unless what.empty?
     end
 
