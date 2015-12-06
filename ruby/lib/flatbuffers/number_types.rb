@@ -5,7 +5,8 @@ module FlatBuffers
                           :rb_type, :name, :packer_type do
       
       def rb_type value 
-        value * bytewidth
+        value
+        #value * bytewidth
       end
 
     end

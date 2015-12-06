@@ -52,8 +52,7 @@ module FlatBuffers
       when Range
         @bytes[slice] = *input 
       when Integer
-        assert_in_range slice
-        @bytes.insert slice, *input
+        insert slice, *input
       end unless input.empty?
     end
 
@@ -69,7 +68,8 @@ module FlatBuffers
       assert_in_range position
 
       what = what.map(&method(:to_bytes)).flatten
-      @bytes.insert position, *what unless what.empty?
+      @bytes[position] = what unless what.empty?
+      @bytes.flatten!
     end
 
     def == other
