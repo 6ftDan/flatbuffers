@@ -3,10 +3,10 @@ module FlatBuffers
     def initialize val
       @value = case val
       when Integer
-        raise StandardError, "#{val} is too large for Byte" if val > 255
+        raise RangeError, "#{val} is too large for Byte" if val > 255
         val
       when String
-        raise StandardError, "#{val} is too large for Byte" if val.length > 1
+        raise RangeError, "#{val} is too large for Byte" if val.length > 1
         val.unpack("C").first
       else
         raise TypeError, "Wrong type #{val.class} for Byte"
@@ -105,7 +105,7 @@ module FlatBuffers
       when String
         input.unpack("C*")
       when Integer
-        raise OutOfRangeError, "Integer #{input} is to large to be a Byte" unless input < 256
+        raise RangeError, "Integer #{input} is to large to be a Byte" unless input < 256
         [input]
       when Byte
         return [input]
@@ -126,7 +126,5 @@ module FlatBuffers
       end
       true
     end
-  end
-  class OutOfRangeError < StandardError
   end
 end
