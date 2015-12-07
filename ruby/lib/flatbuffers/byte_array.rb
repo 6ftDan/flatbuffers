@@ -80,7 +80,7 @@ module FlatBuffers
       assert_in_range position
 
       what = what.flat_map(&method(:to_bytes))
-      @bytes[position..position+what.length-1] = what unless what.empty?
+      @bytes[position, what.length] = what unless what.empty?
     end
 
     def == other
