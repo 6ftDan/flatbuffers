@@ -439,14 +439,14 @@ module FlatBuffers
         return false
       end
 
-      a.each.with_index do |i, elem|
+      a.each.with_index do |elem, i|
         x = Encode.get VoffsetPacker, b, i * N::VOffsetTFlags.bytewidth
 
         # Skip vtable entries that indicate a default value.
         if x == 0 and elem == 0
           nil
         else
-          y = objectStart - elem
+          y = object_start - elem
           if x != y
             return false
           end
