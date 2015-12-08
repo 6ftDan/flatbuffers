@@ -20,12 +20,16 @@ module FlatBuffers
       end
     end
 
+    def unpack _
+      [@value]
+    end
+
     def self.[] obj;     obj.is_a?(Byte) ? obj : Byte.new(obj)    end
     def self.to_proc;    ->obj{self[obj]}                         end
 
     def inspect;     @value                end
     def to_i;        @value                end
-    def to_s;        [@value].pack("C")    end
+    def to_s f="C";  [@value].pack(f)      end
     def to_str;      to_s                  end
     def == o;        o.to_i == @value      end
     def coerce o;    [o.to_i, @value]      end

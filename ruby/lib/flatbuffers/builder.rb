@@ -430,6 +430,32 @@ module FlatBuffers
     end
 
     private
+    def vtable_equal a, object_start, b
+      #"""vtableEqual compares an unwritten vtable to a written vtable."""
+
+      N.enforce_number object_start, N::UOffsetTFlags
+
+      if a.length * N::VOffsetTFlags.bytewidth != b.length
+        return false
+      end
+
+      a.each.with_index do |i, elem|
+        x = Encode.get VoffsetPacker, b, i * N::VOffsetTFlags.bytewidth
+
+        # Skip vtable entries that indicate a default value.
+        if x == 0 and elem == 0
+          nil
+        else
+          y = objectStart - elem
+          if x != y
+            return false
+          end
+        end
+      end
+      true
+    end
+
+
     def assert_not_nested
       raise IsNestedError, "Error; it's nested" if @nested
     end

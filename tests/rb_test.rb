@@ -338,7 +338,6 @@ describe "TestByteLayout" do
   end
 
   it "one unfinished table and one finished table" do
-    skip
     b.start_object 2
     b.prepend_int8_slot 0, 33, 0
     b.prepend_int8_slot 1, 44, 0
