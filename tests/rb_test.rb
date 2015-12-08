@@ -460,3 +460,86 @@ describe "TestByteLayout" do
     ]
   end
 end
+
+describe "TestVtableDeduplication verifies that vtables are deduplicated." do
+  it "test vtabler deduplication" do
+    b = FlatBuffers::Builder.new 0
+
+    b.start_object 4
+    b.prepend_byte_slot 0, 0, 0
+    b.prepend_byte_slot 1, 11, 0
+    b.prepend_byte_slot 2, 22, 0
+    b.prepend_int16_slot 3, 33, 0
+    obj0 = b.end_object
+
+    b.start_object 4
+    b.prepend_byte_slot 0, 0, 0
+    b.prepend_byte_slot 1, 44, 0
+    b.prepend_byte_slot 2, 55, 0
+    b.prepend_int16_slot 3, 66, 0
+    obj1 = b.end_object
+
+    b.start_object 4
+    b.prepend_byte_slot 0, 0, 0
+    b.prepend_byte_slot 1, 77, 0
+    b.prepend_byte_slot 2, 88, 0
+    b.prepend_int16_slot 3, 99, 0
+    obj2 = b.end_object
+
+    got = b.bytes[b.head..-1]
+
+    want = FlatBuffers::ByteArray[ [
+        240, 255, 255, 255,  # == -12. offset to dedupped vtable.
+        99, 0,
+        88,
+        77,
+        248, 255, 255, 255,  # == -8. offset to dedupped vtable.
+        66, 0,
+        55,
+        44,
+        12, 0,
+        8, 0,
+        0, 0,
+        7, 0,
+        6, 0,
+        4, 0,
+        12, 0, 0, 0,
+        33, 0,
+        22,
+        11,
+    ] ]
+
+    assert_equal [want.length, want], [got.length, got]
+
+    table0 = FlatBuffers.table.Table b.bytes, b.bytes.length - obj0
+    table1 = FlatBuffers.table.Table b.bytes, b.bytes.length - obj1
+    table2 = FlatBuffers.table.Table b.bytes, b.bytes.length - obj2
+
+    def _check_table tab, voffsett_value, b, c, d
+      # vtable size
+      got = tab.get_voffsett_slot 0, 0
+      assert_equal 12, got, 'case 0, 0'
+
+      # object size
+      got = tab.get_voffsett_slot 2, 0
+      assert_equal 8, got, 'case 2, 0'
+
+      # default value
+      got = tab.get_voffsett_slot 4, 0
+      assert_equal voffsett_value, got, 'case 4, 0'
+
+      got = tab.get_slot 6, 0, N::Uint8Flags
+      assert_equal b, got, 'case 6, 0'
+
+      val = tab.get_slot 8, 0, N::Uint8Flags
+      assert_equal c, val, 'failed 8, 0'
+
+      got = tab.get_slot 10, 0, N::Uint8Flags
+      assert_equal d, got, 'failed 10, 0'
+    end
+
+    _check_table table0, 0, 11, 22, 33
+    _check_table table1, 0, 44, 55, 66
+    _check_table table2, 0, 77, 88, 99
+  end
+end
