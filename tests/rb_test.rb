@@ -446,7 +446,6 @@ describe "TestByteLayout" do
   end
 
   it "some floats" do
-    skip
     b.start_object 1
     b.prepend_float32_slot 0, 1.0, 0.0
     b.end_object 

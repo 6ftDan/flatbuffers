@@ -165,7 +165,14 @@ module FlatBuffers
       min = flags.min_val
       max = flags.max_val
 
-      return nil if min.nil? && max.nil?
+      if min.nil? && max.nil?
+        case n
+        when Float
+          return n
+        else
+          return nil
+        end
+      end
 
       unless includes? min, max, n 
         raise TypeError, "bad number #{n} for type #{flags.name}"
