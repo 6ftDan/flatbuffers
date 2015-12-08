@@ -463,6 +463,7 @@ end
 
 describe "TestVtableDeduplication verifies that vtables are deduplicated." do
   it "test vtabler deduplication" do
+    skip
     b = FlatBuffers::Builder.new 0
 
     b.start_object 4
@@ -541,5 +542,43 @@ describe "TestVtableDeduplication verifies that vtables are deduplicated." do
     _check_table table0, 0, 11, 22, 33
     _check_table table1, 0, 44, 55, 66
     _check_table table2, 0, 77, 88, 99
+  end
+end
+
+describe "TestExceptions" do
+  let(:b) { FlatBuffers::Builder.new 0 }
+
+  it "test object is nested error" do
+    b.start_object 0
+    _(proc {b.start_object 0}).
+      must_raise FlatBuffers::Builder::IsNestedError
+  end
+
+  it "test object is not nested error" do
+    _(proc {b.end_object}).
+      must_raise FlatBuffers::Builder::IsNotNestedError
+  end
+
+  it "test struct is not inline error" do
+    b.start_object 0
+    _(proc {b.prepend_struct_slot 0, 1, 0}).
+      must_raise FlatBuffers::Builder::StructIsNotInlineError
+  end
+
+  it "test unreachable error" do
+    _(proc { b.prepend_uoffsett_relative 1 }).
+      must_raise FlatBuffers::Builder::OffsetArithmeticError
+  end
+
+  it "test create string is nested error" do
+    b.start_object 0
+    s = 'test1'
+    _(proc {b.create_string s}).
+      must_raise FlatBuffers::Builder::IsNestedError
+  end
+
+  it "test finished bytes error" do
+    _(proc {b.output}).
+      must_raise FlatBuffers::Builder::BuilderNotFinishedError
   end
 end

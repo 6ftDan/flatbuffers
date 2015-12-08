@@ -31,6 +31,21 @@ module FlatBuffers
       @finished = false
     end
 
+
+    def output
+      #"""
+      #Output returns the portion of the buffer that has been used for
+      #writing data. It raises BuilderNotFinishedError if the buffer has not
+      #been finished with `Finish`.
+      #"""
+
+      unless finished
+        raise BuilderNotFinishedError
+      end
+
+      @bytes[@head..-1]
+    end
+
     def start_object numfields
       #"""StartObject initializes bookkeeping for writing a new object."""
 
