@@ -511,9 +511,9 @@ describe "TestVtableDeduplication verifies that vtables are deduplicated." do
 
     assert_equal [want.length, want], [got.length, got]
 
-    table0 = FlatBuffers.table.Table b.bytes, b.bytes.length - obj0
-    table1 = FlatBuffers.table.Table b.bytes, b.bytes.length - obj1
-    table2 = FlatBuffers.table.Table b.bytes, b.bytes.length - obj2
+    table0 = FlatBuffers::Table.new b.bytes, b.bytes.length - obj0
+    table1 = FlatBuffers::Table.new b.bytes, b.bytes.length - obj1
+    table2 = FlatBuffers::Table.new b.bytes, b.bytes.length - obj2
 
     def _check_table tab, voffsett_value, b, c, d
       # vtable size
