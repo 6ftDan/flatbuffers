@@ -19,6 +19,117 @@ describe FlatBuffers do
     _(FlatBuffers.class).must_equal Module
   end
 end
+
+
+describe "TestWireFormat" do
+  def check_read_buffer buf, offset
+    #''' CheckReadBuffer checks that the given buffer is evaluated correctly
+    #    as the example Monster. '''
+
+    monster = MyGame::Example::Monster::Monster::GetRootAsMonster.new buf, offset
+
+    assert monster.Hp() == 80
+    assert monster.Mana() == 150
+    assert monster.Name() == FlatBuffers::ByteArray['MyMonster']
+
+    # initialize a Vec3 from Pos()
+    vec = monster.Pos()
+    refute vec.nil?
+
+    # verify the properties of the Vec3
+    assert vec.X() == 1.0
+    assert vec.Y() == 2.0
+    assert vec.Z() == 3.0
+    assert vec.Test1() == 3.0
+    assert vec.Test2() == 2
+
+    # initialize a Test from Test3(...)
+    t = MyGame::Example::Test::Test.new()
+    t = vec.Test3(t)
+    refute t.nil?
+
+    # verify the properties of the Test
+    assert t.A() == 5
+    assert t.B() == 6
+
+    # verify that the enum code matches the enum declaration:
+    union_type = MyGame::Example::Any::Any
+    assert monster.TestType() == union_type.Monster
+
+    # initialize a Table from a union field Test(...)
+    table2 = monster.Test()
+    assert table2.is_a? FlatBuffers::Table
+
+    # initialize a Monster from the Table from the union
+    monster2 = MyGame::Example::Monster::Monster.new()
+    monster2.Init table2.Bytes, table2.Pos
+
+    assert monster2.Name() == FlatBuffers::ByteArray["Fred"]
+
+    # iterate through the first monster's inventory:
+    assert monster.InventoryLength() == 5
+
+    invsum = 0
+    monster.InventoryLength().times do |i|
+      v = monster.Inventory(i)
+      invsum += v.to_i
+    end
+    assert invsum == 10
+
+    assert monster.Test4Length() == 2
+
+    # create a 'Test' object and populate it:
+    test0 = monster.Test4(0)
+    assert test0.is_a? MyGame::Example::Test::Test
+
+    test1 = monster.Test4(1)
+    assert test1.is_a? MyGame::Example::Test::Test
+
+    # the position of test0 and test1 are swapped in monsterdata_java_wire
+    # and monsterdata_test_wire, so ignore ordering
+    v0 = test0.A()
+    v1 = test0.B()
+    v2 = test1.A()
+    v3 = test1.B()
+    sumtest12 = v0.to_i + v1.to_i + v2.to_i + v3.to_i
+
+    assert sumtest12 == 100
+
+    assert monster.TestarrayofstringLength() == 2
+    assert monster.Testarrayofstring(0) == FlatBuffers::ByteArray["test1"]
+    assert monster.Testarrayofstring(1) == FlatBuffers::ByteArray["test2"]
+
+    assert monster.Enemy().nil?
+
+    assert monster.TestarrayoftablesLength() == 0
+    assert monster.TestnestedflatbufferLength() == 0
+    assert monster.Testempty().nil? 
+  end
+
+
+  it "test wire format" do
+    # Verify that using the generated Ruby code builds a buffer without
+    # returning errors, and is interpreted correctly:
+    gen_buf, gen_off = make_monster_from_generated_code()
+    check_read_buffer gen_buf, gen_off
+
+    # Verify that the canonical flatbuffer file is readable by the
+    # generated Python code. Note that context managers are not part of
+    # Python 2.5, so we use the simpler open/close methods here:
+    f = open 'monsterdata_test.mon', 'rb'
+    canonical_wire_data = f.read
+    f.close
+    check_read_buffer FlatBuffers::ByteArray[canonical_wire_data], 0
+
+    # Write the generated buffer out to a file:
+    f = open 'monsterdata_ruby_wire.mon', 'wb'
+    f.write gen_buf[gen_off..-1]
+    f.close
+  end
+end
+
+
+
 describe "TestByteLayout" do
 
   let(:b){ FlatBuffers::Builder.new 0 }
@@ -463,7 +574,6 @@ end
 
 describe "TestVtableDeduplication verifies that vtables are deduplicated." do
   it "test vtabler deduplication" do
-    skip
     b = FlatBuffers::Builder.new 0
 
     b.start_object 4
