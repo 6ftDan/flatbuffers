@@ -11,14 +11,18 @@ module FlatBuffers
     end
 
 
-    module ::Boolean; end
+    module ::Boolean
+      def to_i
+        case self when TrueClass then 0b1 when FalseClass then 0b0 end
+      end
+    end
+
     class ::FalseClass
       prepend Boolean
-      def to_i; 0b0 end
     end
+
     class ::TrueClass
       prepend Boolean
-      def to_i; 0b1 end
     end
 
     BoolFlags = NumFlags.new(
