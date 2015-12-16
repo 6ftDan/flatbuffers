@@ -19,11 +19,7 @@ module FlatBuffers
         raise TypeError, "Wrong type #{val.class} for Byte"
       end
     end
-
-    def unpack _
-      [@value]
-    end
-
+    
     def self.[] obj;     obj.is_a?(Byte) ? obj : Byte.new(obj)    end
     def self.to_proc;    ->obj{self[obj]}                         end
 
@@ -40,6 +36,7 @@ module FlatBuffers
   end
 
   class ByteArray 
+    require 'forwardable'; extend Forwardable; def_delegator :@bytes, :length
     attr_reader :bytes
     def initialize size = 0, obj = 0
       @bytes = []
@@ -72,10 +69,6 @@ module FlatBuffers
       end unless input.empty?
     end
 
-    def length
-      @bytes.length
-    end
-
     def inspect
       "ByteArray#{@bytes}"
     end
@@ -105,7 +98,6 @@ module FlatBuffers
     end
 
     def method_missing m, *a, &b
-      #puts "Method #{m} called with", *a
       @bytes.send m, *a, &b
     end
 
@@ -113,13 +105,13 @@ module FlatBuffers
     # to_bytes always returns Array of Bytes
     def to_bytes input
       b = case input
+      when Byte
+        return [input]
       when String
         input.unpack("C*")
       when Integer
         raise RangeError, "Integer #{input} is to large to be a Byte" unless input < 256
         [input]
-      when Byte
-        return [input]
       when Array
         input
       when NilClass

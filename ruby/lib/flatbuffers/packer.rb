@@ -14,11 +14,7 @@ module FlatBuffers
     end
 
     def unpack_from buffer, offset = 0
-      buffer[offset].unpack fmt
-    end
-
-    def calcsize
-
+      buffer.join.unpack(fmt)[offset]
     end
   end
 
