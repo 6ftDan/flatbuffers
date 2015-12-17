@@ -100,7 +100,8 @@ module FlatBuffers
         # Find the other vtable, which is associated with `i`:
         vt2_offset = self.vtables[i]
         vt2_start = @bytes.length - vt2_offset
-        vt2_len = Encode.get(VoffsetPacker, @bytes, vt2_start)
+                            #VoffsetPacker doesn't seem to work in Ruby... using C* instead of S*
+        vt2_len = Encode.get(Uint8Packer, @bytes, vt2_start)
 
         metadata = VtableMetadataFields * N::VOffsetTFlags.bytewidth
         vt2_end = vt2_start + vt2_len

@@ -14,6 +14,7 @@ module FlatBuffers
     end
 
     def unpack_from buffer, offset = 0
+      #byebug if offset == 16
       buffer.join.unpack(fmt)[offset]
     end
   end

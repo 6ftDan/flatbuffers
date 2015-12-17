@@ -21,6 +21,10 @@ from .compat import memoryview_type
 
 def Get(packer_type, buf, head):
     """ Get decodes a value at buf[head:] using `packer_type`. """
+    if head == 16:
+        from IPython import embed
+        # Misc code
+        embed()
     return packer_type.unpack_from(memoryview_type(buf), head)[0]
 
 

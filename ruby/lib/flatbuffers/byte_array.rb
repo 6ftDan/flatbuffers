@@ -36,7 +36,8 @@ module FlatBuffers
   end
 
   class ByteArray 
-    require 'forwardable'; extend Forwardable; def_delegator :@bytes, :length
+    require 'forwardable'; extend Forwardable
+    def_delegators :@bytes, :length, :join
     attr_reader :bytes
     def initialize size = 0, obj = 0
       @bytes = []
